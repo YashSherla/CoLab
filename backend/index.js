@@ -8,11 +8,6 @@ app.use(bodyParser.json())
 app.use(express.json())
 app.use(cors())
 
-app.get('/home',(req,res)=>{
-    res.json({
-        message:'this is successfully begin'
-    })
-})
 app.listen(3000,()=>{
     console.log('Server started on http://localhost:3000/?');
 })
