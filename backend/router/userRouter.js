@@ -61,7 +61,7 @@ router.delete('/delete/:id',verifyToken,async (req,res)=>{
     if (req.params.id !== req.user.id) {
         return res.status(401).json({
             success: false,
-            message: "You can only update your own account!"
+            message: "You can only delete your own account!"
         })
     }
     try {

@@ -2,32 +2,40 @@ const mongoose = require('mongoose');
 const taskSchema = new mongoose.Schema({
     name:{
         type:String,
-        require:true,
+        required:true,
         trim:true
     },
     description:{
         type:String,
-        true:true,
+        trim:true,
+        default:"No Description Provided"
     },
     deadline:{
-        type:Date
+        type:Date,
+        validate:{
+            validator: (value)=>{
+                return value >= new Date();
+            },
+            message:'Deadline must be a future date.'
+        }
     },
     status:{
         type:String,
-        enum: ['Not Started', 'In Progress', 'Completed'],
+        enum: ['Not Started', 'In Progress', 'Completed', 'Archived', 'Cancelled'],
         default: 'Not Started',
     },
     assignedUsers:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:'User'
+        type:[mongoose.Schema.Types.ObjectId],
+        ref:'User',
+        default:[]
     },
     projectId:{
         type:mongoose.Schema.Types.ObjectId,
         ref:'Project',
-        require:true
+        required:true
     }
 },{timestamps:true})
-const Task = mongoose.model('Project', taskSchema);
+const Task = mongoose.model('Task', taskSchema);
 module.exports = {
     Task
 }
