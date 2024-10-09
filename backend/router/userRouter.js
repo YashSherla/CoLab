@@ -79,11 +79,11 @@ router.delete('/delete/:id', verifyToken, async (req, res) => {
         })
     }
 })
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/get/:id', verifyToken, async (req, res) => {
     if (req.params.id !== req.user.id) {
         return res.status(401).json({
             success: false,
-            message: "You can only update your own account!"
+            message: "You can only fetch your own account!"
         })
     }
     try {
@@ -98,6 +98,48 @@ router.get('/:id', verifyToken, async (req, res) => {
         return res.status(500).json({
             success: false,
             message: error.message
+        })
+    }
+})
+router.get('/manager',verifyToken,async(req,res)=>{
+    try {
+        const getProjectManagers = await User.find({role:'Manager'})
+        if (!getProjectManagers) {
+            return res.status(400).json({
+                success:false,
+                message:"No Manager Found"
+            })
+        }
+        return res.status(200).json({
+            success:true,
+            message:"Fetch All Managers",
+            managers:getProjectManagers,
+        })
+    } catch (error) {
+        return res.status(500).json({
+            success:false,
+            message:error.message
+        })
+    }
+})
+router.get('/contributor',verifyToken,async(req,res)=>{
+    try {
+        const getContributor = await User.find({role:'Contributor'})
+        if (!getContributor) {
+            return res.status(400).json({
+                success:false,
+                message:"No Contributor Found"
+            })
+        }
+        return res.status(200).json({
+            success:true,
+            message:"Fetch All Contributor",
+            contributors:getContributor,
+        })
+    } catch (error) {
+        return res.status(500).json({
+            success:false,
+            message:error.message
         })
     }
 })

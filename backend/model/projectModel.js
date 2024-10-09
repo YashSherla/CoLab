@@ -24,10 +24,17 @@ const projectSchema = new mongoose.Schema({
         enum: ['Not Started', 'In Progress', 'Completed', 'Archived', 'Cancelled'],
         default: 'Not Started',
     },
-    assignedUsers: {
-        type: [mongoose.Schema.Types.ObjectId],
+    contributersIds: {
+        type: [
+            mongoose.Schema.Types.ObjectId
+        ],
         ref: 'User',
         default: [],
+    },
+    projectManager:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref:'User',
+        default:null
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,

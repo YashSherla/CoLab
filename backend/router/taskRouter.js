@@ -1,19 +1,56 @@
 const express = require('express');
 const { Task } = require('../model/taskModel');
+const z = require('zod')
 const { verifyToken } = require('../middlewares/verifyToken');
+const { default: mongoose } = require('mongoose');
+const { Project } = require('../model/projectModel');
+const { User } = require('../model/userModel');
+const { validateUserRole } = require('../func/validate');
 const router = express.Router({mergeParams:true});
-router.post('/create/:id',verifyToken,async(req,res)=>{
+const taskSchema =  z.object({
+    name: z.string(),
+    description: z.string().optional().default('No Description Provided'),
+    deadline:z.string(),
+    status: z.string().optional().default('Not Started'),
+    assignedUsers:z.union([
+        z.string().refine((id)=> mongoose.isValidObjectId(id),{
+            message: 'Invalid ObjectId',
+        }),
+        z.array(z.string().refine((id)=> mongoose.isValidObjectId(id),{
+            message: 'Invalid ObjectId',
+        }))
+    ]),
+    projectId:z.string().optional()
+})
+router.post('/create/:projectId',verifyToken,async(req,res)=>{
     try {
-        const body = req.body;
+        const body = taskSchema.safeParse(req.body);
+        if (!body.success) {
+            return res.status(400).json({
+                success:false,
+                message:"Invalid Fields"
+            })
+        }
+        const {assignedUsers:assignedUsersIds} = body.data;
+        const assignUser = Array.isArray(assignedUsersIds) ? (assignedUsersIds) : [assignedUsersIds];
+
+        const verifyingId = await Promise.all(assignUser.map(async(id)=>{
+            const project = await Project.findOne({contributersIds:id});
+            if (!project) {
+                const user = await User.findById(id);
+                throw new Error(`User with ID ${id} is not a contributor for the project${user ? `: ${user.username}` : ''}`);            } 
+            const valid = validateUserRole(id,'Contributor');
+            return valid
+        }))
         const task =  await Task.create({
-            ...body,
-            assignedUsers:req.user.id,
-            projectId:req.params.id
+            ...body.data,
+            assignedUsers:verifyingId,
+            projectId:req.params.projectId
         });
-        await task.save();
         return res.status(200).json({
             success:true,
-            message:"Successfully created task"
+            message:"Successfully created task",
+            task:task
         })
     } catch (error) {
         return res.status(500).json({

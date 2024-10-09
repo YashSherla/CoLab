@@ -3,19 +3,62 @@ const { verifyToken } = require('../middlewares/verifyToken');
 const { Project } = require('../model/projectModel');
 const { User } = require('../model/userModel');
 const { authorize } = require('../middlewares/authorize');
+const projectMiddelware = require('../middlewares/projectMiddleware');
+const z = require('zod');
+const mongoose = require('mongoose');
+const { validateContributorIds, validateUserRole } = require('../func/validate');
 const router = express.Router();
+const createProjectSchema = z.object({
+    name: z.string(),
+    description: z.string().optional().default("No Description Provided"),
+    deadline: z.string(),
+    status: z.string().optional().default('Not Started'),
+    contributersIds: z.union([
+        z.string().refine((id) => mongoose.isValidObjectId(id), {
+            message: 'Invalid ObjectId',
+        }),
+        z.array(z.string().refine((id) => mongoose.isValidObjectId(id), {
+            message: 'Invalid ObjectId',
+        })),
+    ]).optional().default([]),
+    projectManager: z.string().optional(),
+    createdBy: z.string().optional(),
+});
+const updateProjectSchema = z.object({
+    name: z.string().optional(),
+    description: z.string().optional(),
+    status: z.string().optional()
+});
 router.post('/create/:id', verifyToken, async (req, res) => {
     if (req.params.id !== req.user.id.toString()) {
-        return res.json({
+        return res.status(400).json({
             success: false,
             message: "You can only create project form your account"
         })
     }
     try {
-        const body = req.body;
+        const body = createProjectSchema.safeParse(req.body);
+        if (!body.success) {
+            return res.status(400).json({
+                success:false,
+                message:body.error.format()
+            })
+        }
+        const {projectManager:projectManagerId,contributorIds}=body.data
+        const contibutor = Array.isArray(contributorIds) ? contributorIds : [contributorIds];
+        if (contibutor.length === 0) {
+            return res.status(400).json({
+                success:false,
+                message:"Provide Contributor Id / Ids"
+            })
+        }
+        const validContributorIds = await validateContributorIds(contributorIds)
+        await validateUserRole(projectManagerId,'Manager')        
         const project = await Project.create({
-            ...body,
-            createdBy: req.user.id
+            ...body.data,
+            createdBy: req.user.id,
+            contributersIds:validContributorIds,
+            projectManager:projectManagerId
         });
         if (!project) {
             return res.status(400).json({
@@ -34,27 +77,27 @@ router.post('/create/:id', verifyToken, async (req, res) => {
         })
     }
 })
-router.post('/update/:id', verifyToken, async (req, res) => {
+router.post('/update/:projectId', verifyToken, projectMiddelware, async (req, res) => {
     try {
-        const project = await Project.findOneAndUpdate(
-            { _id: req.params.id, createdBy: req.user.id },
-            { '$set': req.body },
-            { new: true, runValidators: true })
-        if (!project) {
+        const updateProject = updateProjectSchema.safeParse(req.body);
+        if (!updateProject.success) {
             return res.status(400).json({
-                success: false,
-                message: "Project not found or not authorized"
+                success:false,
+                message:"Invalid Data"
             })
         }
-        await project.save();
+        const project = await Project.findByIdAndUpdate(
+            req.params.projectId,
+            { '$set': updateProject.data },
+            { new: true, runValidators: true })
         return res.status(200).json({
             success: true,
-            message: "You Successfully Created the Project",
+            message: "You Successfully Update the Project",
             project: project
         })
     } catch (error) {
         return res.status(500).json({
-            success: true,
+            success: false,
             message: error.message
         })
     }
@@ -63,12 +106,6 @@ router.post('/update/:id', verifyToken, async (req, res) => {
 router.get('/getAllYourProjects', verifyToken, async (req, res) => {
     try {
         const projects = await Project.find({ createdBy: req.user.id })
-        if (!projects) {
-            return res.status(400).json({
-                success: false,
-                message: 'Project not found or not authorized',
-            })
-        }
         return res.status(200).json({
             success: true,
             message: "Get Your All Projects",
@@ -82,15 +119,9 @@ router.get('/getAllYourProjects', verifyToken, async (req, res) => {
     }
 })
 
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/:projectId', verifyToken,projectMiddelware, async (req, res) => {
     try {
-        const project = await Project.findOne({ _id: req.params.id, createdBy: req.user.id })
-        if (!project) {
-            return res.status(400).json({
-                success: false,
-                message: 'Project not found or not authorized',
-            })
-        }
+        const project = await Project.findById(req.params.projectId)
         return res.status(200).json({
             success: true,
             message: "Successfully!",
@@ -103,16 +134,9 @@ router.get('/:id', verifyToken, async (req, res) => {
         })
     }
 })
-router.delete('/delete/:id', verifyToken, async (req, res) => {
+router.delete('/delete/:projectId', verifyToken,projectMiddelware, async (req, res) => {
     try {
-        console.log(req.params.id);
-        const project = await Project.findByIdAndDelete({ _id: req.params.id, createdBy: req.user.id });
-        if (!project) {
-            return res.status(400).json({
-                success: false,
-                message: "Project not found or not authorized"
-            })
-        }
+        const project = await Project.findByIdAndDelete(req.params.projectId);
         return res.status(200).json({
             success: true,
             message: "Project deleted successfully"
@@ -124,7 +148,33 @@ router.delete('/delete/:id', verifyToken, async (req, res) => {
         })
     }
 })
-router.post('/assignedUsers/:id', verifyToken, async (req, res) => {
+router.post('/assignManager/:projectId', verifyToken ,projectMiddelware,async (req,res)=>{
+    try {
+        const projectManagerId = req.body.projectManagerId;
+        await validateUserRole(projectManagerId,'Manager') 
+        const project = await Project.findByIdAndUpdate(req.params.projectId,{
+            '$set':{
+                projectManager: projectManagerId,
+            }
+        })
+        if (!project) {
+            return res.status(400).json({
+                success:false,
+                message:"Project not found or not updated"
+            })
+        }
+        return res.status(200).json({
+            success:true,
+            message:"Successfully assigned Project Manager"
+        })
+    } catch (error) {
+        return res.status(500).json({
+            success:false,
+            message:error.message
+        })
+    }
+})
+router.post('/assignContributor/:projectId', verifyToken , projectMiddelware, async (req, res) => {
     try {
         const ids = req.body.userIds;
         const userIds = Array.isArray(ids) ? ids : [ids];
@@ -134,41 +184,23 @@ router.post('/assignedUsers/:id', verifyToken, async (req, res) => {
                 message: "User IDs are required"
             });
         }
-        const verifyIds = await Promise.all(userIds.map(async (id) => {
-            const user = await User.findById(id);
-            if (user) {
-                if (user.role === 'Contributor') {
-                    return user._id
-                } else {
-                    return null
-                }
-            } else {
-                return null;
-            }
-        }))
-        if (verifyIds.includes(null)) {
-            return res.status(400).json({
-                success: false,
-                message: "One or more users not found"
-            })
-        }
-        console.log(req.params.id);
-        const updateassignUser = await Project.findOneAndUpdate(
-            { _id: req.params.id, createdBy: req.user.id },
+        const verifyIds = await validateContributorIds(userIds)
+        const updateassignUser = await Project.findByIdAndUpdate(
+            req.params.projectId,
             {
                 '$addToSet': {
-                    assignedUsers: [
-                        verifyIds,
-                    ]
+                    contributersIds: {
+                        '$each':verifyIds
+                    }
                 }
             },
             { new: true, runValidators: true }
         )
         if (!updateassignUser) {
-            return res.status(400).json({
+            return res.status(404).json({
                 success: false,
-                message: "Project not found or not authorized"
-            })
+                message: "Project not found or not updated"
+            });
         }
         return res.status(200).json({
             success: true,

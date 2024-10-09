@@ -9,8 +9,8 @@ const signupSchema = z.object({
     username: z.string(),
     email: z.string().email(),
     password: z.string().min(6),
-    avatar: z.string(),
-    role: z.string(),
+    avatar: z.string().optional(),
+    role: z.string().optional(),
 })
 const signinSchema = z.object({
     email: z.string().email(),
@@ -23,6 +23,7 @@ const googleSignupSchema = z.object({
 })
 router.post('/signup', async (req, res) => {
     const body = signupSchema.safeParse(req.body);
+    console.log(req.body);
     try {
         if (!body.success) {
             return res.status(400).json({
