@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { commentSchema } = require('./commentModel');
 const projectSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -40,7 +41,8 @@ const projectSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
-    }
+    },
+    comment:[commentSchema],
 }, { timestamps: true })
 const Project = mongoose.model('Project', projectSchema);
 module.exports = {

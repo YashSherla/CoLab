@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { commentModel, commentSchema } = require('./commentModel');
 const taskSchema = new mongoose.Schema({
     name:{
         type:String,
@@ -33,7 +34,8 @@ const taskSchema = new mongoose.Schema({
         type:mongoose.Schema.Types.ObjectId,
         ref:'Project',
         required:true
-    }
+    },
+    comment:[commentSchema] 
 },{timestamps:true})
 const Task = mongoose.model('Task', taskSchema);
 module.exports = {

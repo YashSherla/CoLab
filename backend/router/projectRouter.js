@@ -6,32 +6,14 @@ const { authorize } = require('../middlewares/authorize');
 const projectMiddelware = require('../middlewares/projectMiddleware');
 const z = require('zod');
 const mongoose = require('mongoose');
-const { validateContributorIds, validateUserRole } = require('../func/validate');
+const { validateContributorIds, validateUserRole } = require('../utils/validate');
+const HTTP_STATUS = require('../utils/statusCode');
+const { createProjectSchema, updateProjectSchema } = require('../zodSchema/projectSchema');
 const router = express.Router();
-const createProjectSchema = z.object({
-    name: z.string(),
-    description: z.string().optional().default("No Description Provided"),
-    deadline: z.string(),
-    status: z.string().optional().default('Not Started'),
-    contributersIds: z.union([
-        z.string().refine((id) => mongoose.isValidObjectId(id), {
-            message: 'Invalid ObjectId',
-        }),
-        z.array(z.string().refine((id) => mongoose.isValidObjectId(id), {
-            message: 'Invalid ObjectId',
-        })),
-    ]).optional().default([]),
-    projectManager: z.string().optional(),
-    createdBy: z.string().optional(),
-});
-const updateProjectSchema = z.object({
-    name: z.string().optional(),
-    description: z.string().optional(),
-    status: z.string().optional()
-});
+
 router.post('/create/:id', verifyToken, async (req, res) => {
     if (req.params.id !== req.user.id.toString()) {
-        return res.status(400).json({
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
             success: false,
             message: "You can only create project form your account"
         })
@@ -39,7 +21,7 @@ router.post('/create/:id', verifyToken, async (req, res) => {
     try {
         const body = createProjectSchema.safeParse(req.body);
         if (!body.success) {
-            return res.status(400).json({
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success:false,
                 message:body.error.format()
             })
@@ -47,7 +29,7 @@ router.post('/create/:id', verifyToken, async (req, res) => {
         const {projectManager:projectManagerId,contributorIds}=body.data
         const contibutor = Array.isArray(contributorIds) ? contributorIds : [contributorIds];
         if (contibutor.length === 0) {
-            return res.status(400).json({
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success:false,
                 message:"Provide Contributor Id / Ids"
             })
@@ -61,17 +43,17 @@ router.post('/create/:id', verifyToken, async (req, res) => {
             projectManager:projectManagerId
         });
         if (!project) {
-            return res.status(400).json({
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success: false,
                 message: "Invaid Data"
             })
         }
-        return res.status(200).json({
+        return res.status(HTTP_STATUS.OK).json({
             success: true,
             message: "Your Project Succesfully Created"
         })
     } catch (error) {
-        return res.status(500).json({
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             success: false,
             message: error.message
         })
@@ -81,22 +63,32 @@ router.post('/update/:projectId', verifyToken, projectMiddelware, async (req, re
     try {
         const updateProject = updateProjectSchema.safeParse(req.body);
         if (!updateProject.success) {
-            return res.status(400).json({
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success:false,
-                message:"Invalid Data"
+                message: updateProject.error.issues[0].message,
             })
+        }
+        if (
+            (updateProject.data.name === undefined || updateProject.data.name === "") &&
+            (updateProject.data.description === undefined || updateProject.data.description === "") &&
+            (updateProject.data.status === undefined || updateProject.data.status === "")
+        ) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
+                success: false,
+                message: "At least one of username, description, or password must be provided."
+            });
         }
         const project = await Project.findByIdAndUpdate(
             req.params.projectId,
             { '$set': updateProject.data },
             { new: true, runValidators: true })
-        return res.status(200).json({
+        return res.status(HTTP_STATUS.OK).json({
             success: true,
             message: "You Successfully Update the Project",
             project: project
         })
     } catch (error) {
-        return res.status(500).json({
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             success: false,
             message: error.message
         })
@@ -106,13 +98,13 @@ router.post('/update/:projectId', verifyToken, projectMiddelware, async (req, re
 router.get('/getAllYourProjects', verifyToken, async (req, res) => {
     try {
         const projects = await Project.find({ createdBy: req.user.id })
-        return res.status(200).json({
+        return res.status(HTTP_STATUS.OK).json({
             success: true,
             message: "Get Your All Projects",
             projects: projects
         })
     } catch (error) {
-        return res.status(500).json({
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             success: false,
             message: error.message
         })
@@ -122,27 +114,27 @@ router.get('/getAllYourProjects', verifyToken, async (req, res) => {
 router.get('/:projectId', verifyToken,projectMiddelware, async (req, res) => {
     try {
         const project = await Project.findById(req.params.projectId)
-        return res.status(200).json({
+        return res.status(HTTP_STATUS.OK).json({
             success: true,
             message: "Successfully!",
             project: project
         })
     } catch (error) {
-        return res.status(500).json({
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             success: true,
             message: error.message
         })
     }
 })
-router.delete('/delete/:projectId', verifyToken,projectMiddelware, async (req, res) => {
+router.delete('/delete/:projectId', verifyToken, async (req, res) => {
     try {
-        const project = await Project.findByIdAndDelete(req.params.projectId);
-        return res.status(200).json({
+        await Project.findOneAndDelete({_id:req.params.projectId,createdBy:req.user.id})
+        return res.status(HTTP_STATUS.OK).json({
             success: true,
             message: "Project deleted successfully"
         })
     } catch (error) {
-        return res.status(500).json({
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             success: true,
             message: error.message
         })
@@ -158,17 +150,17 @@ router.post('/assignManager/:projectId', verifyToken ,projectMiddelware,async (r
             }
         })
         if (!project) {
-            return res.status(400).json({
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success:false,
                 message:"Project not found or not updated"
             })
         }
-        return res.status(200).json({
+        return res.status(HTTP_STATUS.OK).json({
             success:true,
             message:"Successfully assigned Project Manager"
         })
     } catch (error) {
-        return res.status(500).json({
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             success:false,
             message:error.message
         })
@@ -177,9 +169,15 @@ router.post('/assignManager/:projectId', verifyToken ,projectMiddelware,async (r
 router.post('/assignContributor/:projectId', verifyToken , projectMiddelware, async (req, res) => {
     try {
         const ids = req.body.userIds;
+        if (!ids) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
+                success: false,
+                message: "User IDs are required"
+            });
+        }
         const userIds = Array.isArray(ids) ? ids : [ids];
         if (userIds.length === 0) {
-            return res.status(400).json({
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success: false,
                 message: "User IDs are required"
             });
@@ -197,19 +195,35 @@ router.post('/assignContributor/:projectId', verifyToken , projectMiddelware, as
             { new: true, runValidators: true }
         )
         if (!updateassignUser) {
-            return res.status(404).json({
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success: false,
                 message: "Project not found or not updated"
             });
         }
-        return res.status(200).json({
+        return res.status(HTTP_STATUS.OK).json({
             success: true,
             message: "Successfully assigned users"
         })
     } catch (error) {
-        return res.status(500).json({
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             success: false,
             message: error.message
+        })
+    }
+})
+router.post('/commentProject/:id',verifyToken,async (req,res)=>{
+    if (req.params.id !== req.user.id) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success:false,
+            message:"Invalid Authentication"
+        })
+    }
+    try {
+        
+    } catch (error) {
+        res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+            success:false,
+            message:error.message
         })
     }
 })

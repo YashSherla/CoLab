@@ -1,41 +1,36 @@
 const express = require('express');
 const { Task } = require('../model/taskModel');
-const z = require('zod')
 const { verifyToken } = require('../middlewares/verifyToken');
-const { default: mongoose } = require('mongoose');
 const { Project } = require('../model/projectModel');
 const { User } = require('../model/userModel');
-const { validateUserRole } = require('../func/validate');
+const { validateUserRole } = require('../utils//validate');
+const projectMiddelware = require('../middlewares/projectMiddleware');
+const { authorize } = require('../middlewares/authorize');
+const taskMiddelware = require('../middlewares/taskMiddleware');
+const HTTP_STATUS = require('../utils/statusCode');
+const { taskSchema , updateTaskSchema } = require('../zodSchema/taskSchema');
 const router = express.Router({mergeParams:true});
-const taskSchema =  z.object({
-    name: z.string(),
-    description: z.string().optional().default('No Description Provided'),
-    deadline:z.string(),
-    status: z.string().optional().default('Not Started'),
-    assignedUsers:z.union([
-        z.string().refine((id)=> mongoose.isValidObjectId(id),{
-            message: 'Invalid ObjectId',
-        }),
-        z.array(z.string().refine((id)=> mongoose.isValidObjectId(id),{
-            message: 'Invalid ObjectId',
-        }))
-    ]),
-    projectId:z.string().optional()
-})
-router.post('/create/:projectId',verifyToken,async(req,res)=>{
+
+router.post('/create/:projectId',verifyToken,projectMiddelware,async(req,res)=>{
+    const projectId = req.params.projectId;
+    if (!projectId) {
+        return res.status(401).json({
+            success:false,
+            message:"ProjectId required"
+        })
+    }
     try {
         const body = taskSchema.safeParse(req.body);
         if (!body.success) {
-            return res.status(400).json({
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success:false,
                 message:"Invalid Fields"
             })
         }
         const {assignedUsers:assignedUsersIds} = body.data;
         const assignUser = Array.isArray(assignedUsersIds) ? (assignedUsersIds) : [assignedUsersIds];
-
         const verifyingId = await Promise.all(assignUser.map(async(id)=>{
-            const project = await Project.findOne({contributersIds:id});
+            const project = await Project.findOne({_id:projectId,contributersIds:id})
             if (!project) {
                 const user = await User.findById(id);
                 throw new Error(`User with ID ${id} is not a contributor for the project${user ? `: ${user.username}` : ''}`);            } 
@@ -45,101 +40,135 @@ router.post('/create/:projectId',verifyToken,async(req,res)=>{
         const task =  await Task.create({
             ...body.data,
             assignedUsers:verifyingId,
-            projectId:req.params.projectId
+            projectId:projectId
         });
-        return res.status(200).json({
+        return res.status(HTTP_STATUS.OK).json({
             success:true,
             message:"Successfully created task",
             task:task
         })
     } catch (error) {
-        return res.status(500).json({
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             success:false,
             message:error.message
         })
     }
 })
-router.post('/update/:id/:projectId',verifyToken,async (req,res)=>{
+router.post('/update',verifyToken,taskMiddelware, async (req,res)=>{
+    const {projectId,taskId} = req.query;
+    if (!projectId || !taskId) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            message: 'ProjectId required or TaskId required'
+        });
+    }
     try {
-        const task = await Task.findOneAndUpdate(
-            {_id:req.params.id,assignedUsers:req.user.id,projectId:req.params.projectId},
-            {'$set':req.body},
-            {new:true,runValidators:true})
-        if (!task) {
-            return res.status(400).json({
+        const body = updateTaskSchema.safeParse(req.body);
+        if (!body.success) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success:false,
-                message:"Task not found or not authorized"
+                message:"Invalid Feilds"
             })
         }
-        return res.status(200).json({
+        const {assignedUsers:assignedUsersIds} = body.data;
+        const assignUser = Array.isArray(assignedUsersIds) ? (assignedUsersIds) : [assignedUsersIds];
+        console.log(assignUser[0]);
+        let verifyingId = [];
+        if (assignUser.length > 0 && assignUser === undefined) {
+            verifyingId = await Promise.all(assignUser.map(async(id)=>{
+                const project = await Project.findOne({_id:projectId,contributersIds:id})
+                if (!project) {
+                    const user = await User.findById(id);
+                    throw new Error(`User with ID ${id} is not a contributor for the project${user ? `: ${user.username}` : ''}`);            } 
+                const valid = validateUserRole(id,'Contributor');
+                return valid;
+            }))
+        }
+        const existingTask = await Task.findOne({_id:taskId,projectId:projectId})
+        if (!existingTask) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
+                success:false,
+                message:"TaskId is incorrect or ProjectId is incorrect"
+            })
+        }
+        const updatedTaskData = {
+            name: body.data.title || existingTask.title,
+            description: body.data.description || existingTask.description,
+            deadline:body.data.deadline || existingTask.deadline,
+            status: body.data.status || existingTask.status,
+            assignedUsers: verifyingId.length > 0 ? verifyingId : existingTask.assignedUsers,
+        }
+        const updatedTask = await Task.findByIdAndUpdate(taskId, updatedTaskData, { new: true, runValidators: true });
+        return res.status(HTTP_STATUS.OK).json({
             success:true,
-            message:"You Successfully Created the Task",
-            task:task
+            message:"Successfully Updated the Task",
+            task:updatedTask
         })
     } catch (error) {
-        return res.status(500).json({
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             success:false,
             message:error.message
         })
     }
 })
-router.get('/:id/:projectId',verifyToken,async (req,res)=>{
+router.get('/get',verifyToken,async (req,res)=>{
+    const {projectId,taskId} = req.query;
     try {
-        const task = await Task.findOne({_id:req.params.id,projectId:req.params.projectId})
+        const task = await Task.findOne({_id:taskId,projectId:projectId})
         if (!task) {
-            return res.status(400).json({
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success:false,
                 message:'Task not found',
             })
         }
-        return res.status(200).json({
+        return res.status(HTTP_STATUS.OK).json({
             success:true,
             message:"Successfully!",
             task:task
         })
     } catch (error) {
-        return res.status(500).json({
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             success:true,
             message:error.message
         })
     }
 })
-router.get('/getAllProjectsTask',verifyToken,async (req,res)=>{
+router.get('/getProjectAllTask',verifyToken,async (req,res)=>{
     try {
       const tasks = await Task.find({projectId:req.params.projectId})
       if (!tasks) {
-        return res.status(400).json({
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
             success:false,
             message:'Failed to fetch tasks',
         })
       }
-      return res.status(200).json({
+      return res.status(HTTP_STATUS.OK).json({
         success:true,
         message:"Get Your All Projects",
         tasks:tasks
       })
     } catch (error) {
-        return res.status(500).json({
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             success:true,
             message:error.message
         })
     }
 })
-router.delete('/delete/:id/:projectId',verifyToken,async(req,res)=>{
+router.delete('/delete/:taskId',verifyToken,authorize('Admin','Manager'),async(req,res)=>{
     try {
-     const task = await Task.findByIdAndDelete({_id:req.params.id,createdBy:req.user.id});
+        const task = await Task.findByIdAndDelete(req.params.taskId)
         if (!task) {
-            return res.status(400).json({
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success:false,
                 message:"Tasl not found in this project"
             })
         }
-        return res.status(200).json({
+        return res.status(HTTP_STATUS.OK).json({
             success:true,
             message:"Task deleted successfully"
         })
     } catch (error) {
-        return res.status(500).json({
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             success:true,
             message:error.message
         })

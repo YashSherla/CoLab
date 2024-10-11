@@ -1,9 +1,9 @@
 const { User } = require("../db/db");
 
-const authorize = (...allowedRoles ) => {
+const authorize = (...allowedRoles) => {
     return async (req, res, next) =>{
     try {
-        const id = req.params.id;
+        const id = req.user.id;
         const user = await User.findById(id);
         if (!user || !allowedRoles.includes(user.role) ) {
             return res.status(403).json({

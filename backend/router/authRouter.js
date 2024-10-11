@@ -3,42 +3,29 @@ const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const z = require('zod');
 const { User } = require('../model/userModel');
+const HTTP_STATUS = require('../utils/statusCode');
+const { signupSchema, signinSchema, googleSignupSchema } = require('../zodSchema/authSchema');
 const password = "admin"
 const router = express.Router();
-const signupSchema = z.object({
-    username: z.string(),
-    email: z.string().email(),
-    password: z.string().min(6),
-    avatar: z.string().optional(),
-    role: z.string().optional(),
-})
-const signinSchema = z.object({
-    email: z.string().email(),
-    password: z.string(),
-})
-const googleSignupSchema = z.object({
-    username: z.string(),
-    email: z.string().email(),
-    avatar: z.string()
-})
+
 router.post('/signup', async (req, res) => {
     const body = signupSchema.safeParse(req.body);
     console.log(req.body);
     try {
         if (!body.success) {
-            return res.status(400).json({
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success: false,
                 message: "Email already taken / Incorrect inputs",
             })
         }
         const hashedPassword = bcryptjs.hashSync(body.data.password, 10);
         await User.create({ ...body.data, password: hashedPassword })
-        return res.status(200).json({
+        return res.status(HTTP_STATUS.OK).json({
             success: true,
             message: "User created successfully",
         })
     } catch (error) {
-        return res.status(500).json({
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             success: false,
             message: error.message
         })
@@ -46,23 +33,24 @@ router.post('/signup', async (req, res) => {
 })
 router.post('/signin', async (req, res) => {
     const body = signinSchema.safeParse(req.body);
+    console.log("This is body"+body.data);
     try {
         if (!body.success) {
-            return res.status(400).json({
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success: false,
-                message: " Incorrect inputs",
+                message: " Incorrect inputs / Provide Correct inputs",
             })
         }
         const user = await User.findOne({ email: body.data.email })
         if (!user) {
-            return res.status(400).json({
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success: false,
                 message: "User not found",
             })
         }
         const validPassword = bcryptjs.compareSync(body.data.password, user.password);
         if (!validPassword) {
-            return res.status(400).json({
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success: false,
                 message: "Invalid password",
             })
@@ -70,7 +58,7 @@ router.post('/signin', async (req, res) => {
         const token = jwt.sign({ id: user._id }, password);
         console.log(token);
         const { password: pass, ...others } = user._doc;
-        return res.status(200).json({
+        return res.status(HTTP_STATUS.OK).json({
             success: true,
             message: "User logged in successfully",
             token: token,
@@ -78,7 +66,7 @@ router.post('/signin', async (req, res) => {
         })
 
     } catch (error) {
-        return res.status(500).json({
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             success: false,
             message: error.message
         })
@@ -91,7 +79,7 @@ router.post('/google', async (req, res) => {
         if (user) {
             const token = jwt.sign({ id: user._id }, password);
             const { password: pass, ...others } = user._doc;
-            return res.status(200).json({
+            return res.status(HTTP_STATUS.OK).json({
                 success: true,
                 message: "User logged in successfully",
                 token: token,
@@ -109,7 +97,7 @@ router.post('/google', async (req, res) => {
             await newUser.save();
             const token = jwt.sign({ id: user._id }, password);
             const { password: pass, ...others } = user._doc;
-            return res.status(200).json({
+            return res.status(HTTP_STATUS.OK).json({
                 success: true,
                 message: "User created successfully",
                 token: token,
@@ -117,7 +105,7 @@ router.post('/google', async (req, res) => {
             })
         }
     } catch (error) {
-        return res.status(500).json({
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             success: false,
             message: error.message
         })
