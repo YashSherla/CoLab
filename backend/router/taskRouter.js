@@ -128,7 +128,6 @@ router.post('/update', verifyToken, taskMiddelware, async (req, res) => {
         })
     }
 })
-
 router.get('/get', verifyToken, async (req, res) => {
     const { projectId, taskId } = req.query;
     try {
