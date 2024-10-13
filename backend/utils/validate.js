@@ -1,6 +1,6 @@
 const { User } = require("../model/userModel")
 
-const validateUserRole = async (userId,expectedRole) =>{
+const validateUserRole = async (userId, expectedRole) => {
     const user = await User.findById(userId);
     if (!user) {
         throw new Error(`User ID ${userId} not found`);
@@ -10,8 +10,8 @@ const validateUserRole = async (userId,expectedRole) =>{
     }
     return user._id
 }
-const validateContributorIds = async (contributorId) =>{
-    const validIds = await Promise.all(contributorId.map(id => validateUserRole(id , 'Contributor')))
+const validateContributorIds = async (contributorId) => {
+    const validIds = await Promise.all(contributorId.map(id => validateUserRole(id, 'Contributor')))
     return validIds;
 }
 module.exports = {

@@ -1,11 +1,8 @@
 const express = require('express');
 const { verifyToken } = require('../middlewares/verifyToken');
 const { Project } = require('../model/projectModel');
-const { User } = require('../model/userModel');
 const { authorize } = require('../middlewares/authorize');
 const projectMiddelware = require('../middlewares/projectMiddleware');
-const z = require('zod');
-const mongoose = require('mongoose');
 const { validateContributorIds, validateUserRole } = require('../utils/validate');
 const HTTP_STATUS = require('../utils/statusCode');
 const { createProjectSchema, updateProjectSchema } = require('../zodSchema/projectSchema');
@@ -21,26 +18,32 @@ router.post('/create/:id', verifyToken, async (req, res) => {
     try {
         const body = createProjectSchema.safeParse(req.body);
         if (!body.success) {
+            const errorMessages = body.error.errors.map(err => {
+                return `${err.path.join('.')} - ${err.message}`;
+            });
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
-                success:false,
-                message:body.error.format()
+                success: false,
+                message: errorMessages
             })
         }
-        const {projectManager:projectManagerId,contributorIds}=body.data
-        const contibutor = Array.isArray(contributorIds) ? contributorIds : [contributorIds];
-        if (contibutor.length === 0) {
-            return res.status(HTTP_STATUS.BAD_REQUEST).json({
-                success:false,
-                message:"Provide Contributor Id / Ids"
-            })
+        const { projectManager: projectManagerId, contributersIds } = body.data;
+        console.log(body.data);
+        const contibutor = Array.isArray(contributersIds) ? contributersIds : [contributersIds];
+        if (contibutor) {
+            console.log("This is contributor");
+            await validateContributorIds(contibutor)
         }
-        const validContributorIds = await validateContributorIds(contributorIds)
-        await validateUserRole(projectManagerId,'Manager')        
+        if (projectManagerId) {
+            await validateUserRole(projectManagerId, 'Manager')
+        }
         const project = await Project.create({
-            ...body.data,
+            name: body.data.name,
+            description: body.data.deadline,
+            deadline: body.data.deadline,
+            status: body.data.status,
             createdBy: req.user.id,
-            contributersIds:validContributorIds,
-            projectManager:projectManagerId
+            contributersIds: contributersIds,
+            projectManager: projectManagerId,
         });
         if (!project) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
@@ -64,7 +67,7 @@ router.post('/update/:projectId', verifyToken, projectMiddelware, async (req, re
         const updateProject = updateProjectSchema.safeParse(req.body);
         if (!updateProject.success) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
-                success:false,
+                success: false,
                 message: updateProject.error.issues[0].message,
             })
         }
@@ -111,7 +114,7 @@ router.get('/getAllYourProjects', verifyToken, async (req, res) => {
     }
 })
 
-router.get('/:projectId', verifyToken,projectMiddelware, async (req, res) => {
+router.get('/:projectId', verifyToken, projectMiddelware, async (req, res) => {
     try {
         const project = await Project.findById(req.params.projectId)
         return res.status(HTTP_STATUS.OK).json({
@@ -128,7 +131,7 @@ router.get('/:projectId', verifyToken,projectMiddelware, async (req, res) => {
 })
 router.delete('/delete/:projectId', verifyToken, async (req, res) => {
     try {
-        await Project.findOneAndDelete({_id:req.params.projectId,createdBy:req.user.id})
+        await Project.findOneAndDelete({ _id: req.params.projectId, createdBy: req.user.id })
         return res.status(HTTP_STATUS.OK).json({
             success: true,
             message: "Project deleted successfully"
@@ -140,33 +143,39 @@ router.delete('/delete/:projectId', verifyToken, async (req, res) => {
         })
     }
 })
-router.post('/assignManager/:projectId', verifyToken ,projectMiddelware,async (req,res)=>{
+router.post('/assignManager/:projectId', verifyToken, projectMiddelware, async (req, res) => {
     try {
         const projectManagerId = req.body.projectManagerId;
-        await validateUserRole(projectManagerId,'Manager') 
-        const project = await Project.findByIdAndUpdate(req.params.projectId,{
-            '$set':{
+        if (!projectManagerId) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
+                success: false,
+                message: "Invalid Data"
+            })
+        }
+        await validateUserRole(projectManagerId, 'Manager')
+        const project = await Project.findByIdAndUpdate(req.params.projectId, {
+            '$set': {
                 projectManager: projectManagerId,
             }
         })
         if (!project) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
-                success:false,
-                message:"Project not found or not updated"
+                success: false,
+                message: "Project not found or not updated"
             })
         }
         return res.status(HTTP_STATUS.OK).json({
-            success:true,
-            message:"Successfully assigned Project Manager"
+            success: true,
+            message: "Successfully assigned Project Manager"
         })
     } catch (error) {
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-            success:false,
-            message:error.message
+            success: false,
+            message: error.message
         })
     }
 })
-router.post('/assignContributor/:projectId', verifyToken , projectMiddelware, async (req, res) => {
+router.post('/assignContributor/:projectId', verifyToken, projectMiddelware, async (req, res) => {
     try {
         const ids = req.body.userIds;
         if (!ids) {
@@ -188,7 +197,7 @@ router.post('/assignContributor/:projectId', verifyToken , projectMiddelware, as
             {
                 '$addToSet': {
                     contributersIds: {
-                        '$each':verifyIds
+                        '$each': verifyIds
                     }
                 }
             },
@@ -211,20 +220,71 @@ router.post('/assignContributor/:projectId', verifyToken , projectMiddelware, as
         })
     }
 })
-router.post('/commentProject/:id',verifyToken,async (req,res)=>{
-    if (req.params.id !== req.user.id) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-            success:false,
-            message:"Invalid Authentication"
-        })
-    }
+router.post('/commentProject/:projectId', verifyToken, async (req, res) => {
     try {
-        
+        const comment = req.body.comment;
+        if (!comment) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
+                success: false,
+                message: "Comment cannot be empty"
+            })
+        }
+        const project = await Project.findById(req.params.projectId);
+        if (!project) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
+                success: false,
+                message: "Project Not Found"
+            })
+        }
+        const projectComment = await Project.findByIdAndUpdate(req.params.projectId, {
+            '$push': {
+                comment: {
+                    userId: req.user.id,
+                    comment: req.body.comment,
+                    relatedId: req.params.projectId,
+                    relatedType: 'Project',
+                }
+            }
+
+        })
+        if (!projectComment) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
+                success: false,
+                message: "Comment Unsuccessfully"
+            })
+        }
+        return res.status(HTTP_STATUS.OK).json({
+            success: true,
+            message: "Comment Succesfully"
+        })
+
+
     } catch (error) {
-        res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-            success:false,
-            message:error.message
+    }
+})
+router.get('/getProjectComments/:projectId', verifyToken, async (req, res) => {
+    const projectId = req.params.projectId;
+    if (!projectId) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            message: "ProjectId Required"
         })
     }
+    const project = await Project.findById(projectId);
+    if (!project) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            message: "TaskId is incorrect"
+        })
+    }
+    const comments = project.comment.map(({ userId, comment, createdAt }) => ({
+        userId,
+        comment,
+        createdAt
+    }));
+    return res.status(HTTP_STATUS.OK).json({
+        success: true,
+        comment: comments,
+    })
 })
 module.exports = router

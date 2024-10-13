@@ -1,4 +1,4 @@
-const  mongoose  = require("mongoose");
+const mongoose = require("mongoose");
 const { z } = require("zod");
 
 const createProjectSchema = z.object({
@@ -16,19 +16,22 @@ const createProjectSchema = z.object({
     ]).optional().default([]),
     projectManager: z.string().optional(),
     createdBy: z.string().optional(),
-    comment:z.array(z.object({
-        user:z.string().refine((id)=>mongoose.isValidObjectId(id),{
-            message:'Invalid ObjectId user'
-        })
-        
-    })).optional().default([])
+    // comment: z.array(z.object({
+    //     userId: z.string().refine((id) => mongoose.isValidObjectId(id), {
+    //         message: 'Invalid ObjectId user'
+    //     }),
+    //     relatedId: z.string().refine((id) => mongoose.isValidObjectId(id), {
+    //         message: 'Invalid ObjectId user'
+    //     }),
+    //     comment: z.string(),
+    // })).optional().default([])
 }).strict();
 
 
 const updateProjectSchema = z.object({
     name: z.string().optional(),
     description: z.string().optional(),
-    deadline:z.string().optional(),
+    deadline: z.string().optional(),
     status: z.string().optional(),
 }).strict();
 

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { commentSchema } = require('./commentModel');
+const { commentSchema } = require('../schema/commentSchema');
 const projectSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -32,17 +32,20 @@ const projectSchema = new mongoose.Schema({
         ref: 'User',
         default: [],
     },
-    projectManager:{
+    projectManager: {
         type: mongoose.Schema.Types.ObjectId,
-        ref:'User',
-        default:null
+        ref: 'User',
+        default: null
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
     },
-    comment:[commentSchema],
+    comment: {
+        type: [commentSchema],
+        default: [],
+    },
 }, { timestamps: true })
 const Project = mongoose.model('Project', projectSchema);
 module.exports = {

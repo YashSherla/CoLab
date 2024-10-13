@@ -1,9 +1,10 @@
 const jwt = require('jsonwebtoken');
+const HTTP_STATUS = require('../utils/statusCode');
 const password = "admin"
 const verifyToken = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({
+        return res.status(HTTP_STATUS.UNAUTHORIZED).json({
             success: false,
             message: "No token provided"
         })
@@ -12,7 +13,7 @@ const verifyToken = async (req, res, next) => {
     try {
         const decode = jwt.verify(token, password)
         if (!decode) {
-            return res.status(401).json({
+            return res.status(HTTP_STATUS.UNAUTHORIZED).json({
                 success: false,
                 message: "Your token is Invalid"
             })
@@ -21,7 +22,7 @@ const verifyToken = async (req, res, next) => {
         req.user = decode;
         next()
     } catch (error) {
-        return res.status(500).json({
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             success: false,
             message: error.message
         })

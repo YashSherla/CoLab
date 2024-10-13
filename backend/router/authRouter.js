@@ -10,15 +10,15 @@ const router = express.Router();
 
 router.post('/signup', async (req, res) => {
     const body = signupSchema.safeParse(req.body);
-    console.log(req.body);
     try {
         if (!body.success) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success: false,
-                message: "Email already taken / Incorrect inputs",
+                message: "Invalid Input / Password should atleast 6",
             })
         }
         const hashedPassword = bcryptjs.hashSync(body.data.password, 10);
+
         await User.create({ ...body.data, password: hashedPassword })
         return res.status(HTTP_STATUS.OK).json({
             success: true,
@@ -33,7 +33,7 @@ router.post('/signup', async (req, res) => {
 })
 router.post('/signin', async (req, res) => {
     const body = signinSchema.safeParse(req.body);
-    console.log("This is body"+body.data);
+    console.log("This is body" + body.data);
     try {
         if (!body.success) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
