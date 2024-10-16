@@ -1,13 +1,12 @@
 const express = require('express');
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const z = require('zod');
 const { User } = require('../model/userModel');
 const HTTP_STATUS = require('../utils/statusCode');
 const { signupSchema, signinSchema, googleSignupSchema } = require('../zodSchema/authSchema');
 const password = "admin"
 const router = express.Router();
-
+const {mogoConnect} = require('../db/db')
 router.post('/signup', async (req, res) => {
     const body = signupSchema.safeParse(req.body);
     try {
@@ -18,7 +17,7 @@ router.post('/signup', async (req, res) => {
             })
         }
         const hashedPassword = bcryptjs.hashSync(body.data.password, 10);
-
+        await mogoConnect()
         await User.create({ ...body.data, password: hashedPassword })
         return res.status(HTTP_STATUS.OK).json({
             success: true,
@@ -41,6 +40,7 @@ router.post('/signin', async (req, res) => {
                 message: " Incorrect inputs / Provide Correct inputs",
             })
         }
+        await mogoConnect()
         const user = await User.findOne({ email: body.data.email })
         if (!user) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
@@ -74,6 +74,7 @@ router.post('/signin', async (req, res) => {
 })
 router.post('/google', async (req, res) => {
     try {
+        await mogoConnect()
         const body = googleSignupSchema.safeParse(req.body)
         const user = await User.findOne({ email: body.data.email })
         if (user) {

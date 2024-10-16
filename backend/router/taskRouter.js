@@ -9,6 +9,9 @@ const { authorize } = require('../middlewares/authorize');
 const taskMiddelware = require('../middlewares/taskMiddleware');
 const HTTP_STATUS = require('../utils/statusCode');
 const { taskSchema, updateTaskSchema } = require('../zodSchema/taskSchema');
+const { mogoConnect } = require('../db/db');
+const { getServer } = require('../socket/socket');
+
 const router = express.Router({ mergeParams: true });
 
 router.post('/create/:projectId', verifyToken, projectMiddelware, async (req, res) => {
@@ -27,6 +30,7 @@ router.post('/create/:projectId', verifyToken, projectMiddelware, async (req, re
                 message: "Invalid Fields"
             })
         }
+        await mogoConnect();
         const { assignedUsers: assignedUsersIds } = body.data;
         const assignUser = Array.isArray(assignedUsersIds) ? (assignedUsersIds) : [assignedUsersIds];
         const verifyingId = await Promise.all(assignUser.map(async (id) => {
@@ -64,6 +68,7 @@ router.post('/update', verifyToken, taskMiddelware, async (req, res) => {
         });
     }
     try {
+        const io = getServer()
         const body = updateTaskSchema.safeParse(req.body);
         if (!body.success) {
             const errorMessages = body.error.errors.map(err => {
@@ -74,6 +79,7 @@ router.post('/update', verifyToken, taskMiddelware, async (req, res) => {
                 message: errorMessages,
             })
         }
+        await mogoConnect();
         const { assignedUsers: assignedUsersIds } = body.data;
         if (assignedUsersIds) {
             const projectAssign = await Project.findById(projectId)
@@ -116,6 +122,10 @@ router.post('/update', verifyToken, taskMiddelware, async (req, res) => {
                 }
             }
         }, { new: true, runValidators: true });
+        io.emit('taskUpdated',updatedTask)
+        io.on('connect',()=>{
+            console.log("Server is Connect");
+        })
         return res.status(HTTP_STATUS.OK).json({
             success: true,
             message: "Successfully Updated the Task",

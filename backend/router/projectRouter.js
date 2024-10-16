@@ -6,9 +6,10 @@ const projectMiddelware = require('../middlewares/projectMiddleware');
 const { validateContributorIds, validateUserRole } = require('../utils/validate');
 const HTTP_STATUS = require('../utils/statusCode');
 const { createProjectSchema, updateProjectSchema } = require('../zodSchema/projectSchema');
+const { mogoConnect } = require('../db/db');
 const router = express.Router();
 
-router.post('/create/:id', verifyToken, async (req, res) => {
+router.post('/create/:id', verifyToken,async (req, res) => {
     if (req.params.id !== req.user.id.toString()) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
             success: false,
@@ -16,6 +17,7 @@ router.post('/create/:id', verifyToken, async (req, res) => {
         })
     }
     try {
+        await mogoConnect();
         const body = createProjectSchema.safeParse(req.body);
         if (!body.success) {
             const errorMessages = body.error.errors.map(err => {

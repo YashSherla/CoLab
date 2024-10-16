@@ -1,8 +1,10 @@
+import { RealTime } from "./compenent/RealTime"
+
 function App() {
 
   return (
     <div >
-      <h1>This is Yash Sherla</h1>
+     <RealTime></RealTime>
     </div>
   )
 }
