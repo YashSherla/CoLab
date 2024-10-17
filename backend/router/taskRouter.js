@@ -10,10 +10,7 @@ const taskMiddelware = require('../middlewares/taskMiddleware');
 const HTTP_STATUS = require('../utils/statusCode');
 const { taskSchema, updateTaskSchema } = require('../zodSchema/taskSchema');
 const { mogoConnect } = require('../db/db');
-const { getServer } = require('../socket/socket');
-
 const router = express.Router({ mergeParams: true });
-
 router.post('/create/:projectId', verifyToken, projectMiddelware, async (req, res) => {
     const projectId = req.params.projectId;
     if (!projectId) {
@@ -47,6 +44,7 @@ router.post('/create/:projectId', verifyToken, projectMiddelware, async (req, re
             assignedUsers: verifyingId,
             projectId: projectId
         });
+        req.io.emit('taskCreated', task);
         return res.status(HTTP_STATUS.OK).json({
             success: true,
             message: "Successfully created task",
@@ -122,10 +120,7 @@ router.post('/update', verifyToken, taskMiddelware, async (req, res) => {
                 }
             }
         }, { new: true, runValidators: true });
-        io.emit('taskUpdated',updatedTask)
-        io.on('connect',()=>{
-            console.log("Server is Connect");
-        })
+        req.io.emit('taskUpdated',updatedTask)
         return res.status(HTTP_STATUS.OK).json({
             success: true,
             message: "Successfully Updated the Task",
@@ -190,6 +185,7 @@ router.delete('/delete/:taskId', verifyToken, authorize('Admin', 'Manager'), asy
                 message: "Task not found in this project"
             })
         }
+        req.io.emit('taskDelete',task)
         return res.status(HTTP_STATUS.OK).json({
             success: true,
             message: "Task deleted successfully"

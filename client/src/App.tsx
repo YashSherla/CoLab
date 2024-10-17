@@ -1,10 +1,13 @@
-import { RealTime } from "./compenent/RealTime"
+
+import './App.css'
+import { RealTime } from './components/RealTime'
 
 function App() {
 
+
   return (
-    <div >
-     <RealTime></RealTime>
+    <div>
+      <RealTime />
     </div>
   )
 }

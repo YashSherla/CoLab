@@ -48,6 +48,3 @@ export default tseslint.config({
   },
 })
 ```
-
-
-if i update i take on

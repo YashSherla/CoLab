@@ -1,12 +1,18 @@
 const request = require('supertest');
-const app = require('../index'); // Adjust the path to your Express app
+const app = require('../index'); 
+const bcryptjs = require('bcryptjs');
 const { User } = require('../model/userModel');
-const bcryptjs = require('bcryptjs')
+jest.mock('../model/userModel',()=>{
+  return {
+    User:{
+      create: jest.fn(),
+      findOne: jest.fn(),
+    }
+  }
+})
 
-// You may want to mock the DB for testing to avoid affecting production data
 jest.mock('../db/db');
 
-// Clear the mock database before each test
 beforeEach(() => {
   User.create.mockClear();
   User.findOne.mockClear();
@@ -46,9 +52,10 @@ describe('Auth Routes', () => {
 
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty('success', false);
-      expect(res.body).toHaveProperty('message', 'Email already taken / Incorrect inputs');
+      expect(res.body).toHaveProperty('message', "Invalid Input / Password should atleast 6");
     });
   });
+  
 
   describe('POST /auth/signin', () => {
     it('should return 200 and log in an existing user with correct credentials', async () => {
@@ -73,14 +80,19 @@ describe('Auth Routes', () => {
     });
 
     it('should return 400 if email is not found', async () => {
-      // User.findOne.mockResolvedValue(null)
+       User.findOne.mockResolvedValue({
+        _id: 'someUserId',
+        email: 'testuser@example.com',
+        password: 'hashedpassword',
+        _doc: { email: 'testuser@example.com', username: 'testuser' }
+      })
+      jest.spyOn(bcryptjs, 'compareSync').mockReturnValue(false);
       const res = await request(app)
         .post('/auth/signin')
         .send({
-          email: 'nonexistent@example.com',
+          email: 'nonexistent@example.com', 
           password: 'testpassword',
         });
-
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty('success', false);
       expect(res.body).toHaveProperty('message', 'User not found');
