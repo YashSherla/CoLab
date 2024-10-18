@@ -1,13 +1,10 @@
-
 import './App.css'
-import { RealTime } from './components/RealTime'
+import { Navbar } from './components/NavBar'
 
 function App() {
-
-
   return (
     <div>
-      <RealTime />
+      <Navbar/>
     </div>
   )
 }

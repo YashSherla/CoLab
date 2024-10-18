@@ -80,18 +80,13 @@ describe('Auth Routes', () => {
     });
 
     it('should return 400 if email is not found', async () => {
-       User.findOne.mockResolvedValue({
-        _id: 'someUserId',
-        email: 'testuser@example.com',
-        password: 'hashedpassword',
-        _doc: { email: 'testuser@example.com', username: 'testuser' }
-      })
+       User.findOne.mockResolvedValue(null)
       jest.spyOn(bcryptjs, 'compareSync').mockReturnValue(false);
       const res = await request(app)
         .post('/auth/signin')
         .send({
           email: 'nonexistent@example.com', 
-          password: 'testpassword',
+          password: 'hashedpassword',
         });
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty('success', false);
