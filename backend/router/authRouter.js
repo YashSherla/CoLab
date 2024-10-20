@@ -6,7 +6,7 @@ const HTTP_STATUS = require('../utils/statusCode');
 const { signupSchema, signinSchema, googleSignupSchema } = require('../zodSchema/authSchema');
 const password = "admin"
 const router = express.Router();
-const {mogoConnect} = require('../db/db')
+const { mogoConnect } = require('../db/db')
 router.post('/signup', async (req, res) => {
     const body = signupSchema.safeParse(req.body);
     try {
@@ -58,7 +58,7 @@ router.post('/signin', async (req, res) => {
         const token = jwt.sign({ id: user._id }, password);
         console.log(token);
         const { password: pass, ...others } = user._doc;
-        return res.status(HTTP_STATUS.OK).json({
+        return res.cookie().status(HTTP_STATUS.OK).json({
             success: true,
             message: "User logged in successfully",
             token: token,
