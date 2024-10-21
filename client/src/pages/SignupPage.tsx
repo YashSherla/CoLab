@@ -28,7 +28,7 @@ export const SignupPage = () => {
             } else {
                 setLoading(false);
                 setError(null);
-                navigate('/sign-in')
+                navigate('/details')
             }
         } catch (error:any) {
            if (error.response && error.response.data) {
@@ -58,7 +58,7 @@ export const SignupPage = () => {
                     <Link to={'/sign-in'}><p className='text-black dark:text-white'>Signin</p></Link>
                     <DarkMode></DarkMode>
                 </div>
-                <div className='place-items-center mt-40 space-y-5'>
+                <div className='flex flex-col items-center mt-40 space-y-5'>
                     <div className='space-y-3'>
                         <h1 className="text-2xl font-semibold tracking-tight text-center dark:text-white">Create an account</h1>
                         <p className="text-sm dark:text-gray-400">Enter your email below to create your account</p>

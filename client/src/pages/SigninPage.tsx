@@ -22,7 +22,9 @@ export const SigninPage = () => {
         e.preventDefault();
         try {
             setLoading(true)
-            const res = await axios.post('http://localhost:3000/auth/signin', fromData);
+            const res = await axios.post('http://localhost:3000/auth/signin', fromData,{
+                withCredentials: true 
+            });
             if (res.data.success == false) {
             setError(res.data.message);
             setLoading(false);
@@ -59,10 +61,10 @@ export const SigninPage = () => {
                     <Link to={'/sign-up'}> <p className='text-black dark:text-white'>Signup</p></Link>
                     <DarkMode></DarkMode>
                 </div>
-                <div className='place-items-center mt-40 space-y-5'>
+                <div className='flex flex-col items-center mt-40 space-y-5'>
                     <div className='space-y-3'>
                         <h1 className="text-2xl font-semibold tracking-tight text-center dark:text-white">Sign In</h1>
-                        <p className="text-sm dark:text-gray-400">Enter your email below to sign your account</p>
+                        <p className="text-sm  dark:text-gray-400">Enter your email below to sign your account</p>
                     </div>
                     <div className='w-[350px] space-y-2'>
                         <form onSubmit={handleSubmit} className='space-y-2'>

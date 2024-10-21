@@ -16,12 +16,21 @@ router.post('/signup', async (req, res) => {
                 message: "Invalid Input / Password should atleast 6",
             })
         }
+        
         const hashedPassword = bcryptjs.hashSync(body.data.password, 10);
         await mogoConnect()
-        await User.create({ ...body.data, password: hashedPassword })
-        return res.status(HTTP_STATUS.OK).json({
+        const user = await User.create({ ...body.data, password: hashedPassword })
+        const token = jwt.sign({ id: user._id }, password);
+        const { password: pass, ...others } = user._doc;
+        return res.cookie('access_token',token,{
+            httpOnly:true,
+            // secure:false,
+            // sameSite: 'None',
+            maxAge: 24 * 60 * 60 * 1000,
+        }).status(HTTP_STATUS.OK).json({
             success: true,
             message: "User created successfully",
+            user:others
         })
     } catch (error) {
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
@@ -58,10 +67,15 @@ router.post('/signin', async (req, res) => {
         const token = jwt.sign({ id: user._id }, password);
         console.log(token);
         const { password: pass, ...others } = user._doc;
-        return res.cookie().status(HTTP_STATUS.OK).json({
+        return res.cookie('access_token',token,{
+            httpOnly:true,
+            // secure:false,
+            // sameSite: 'None',
+            maxAge: 24 * 60 * 60 * 1000,
+        }).status(HTTP_STATUS.OK).json({
             success: true,
             message: "User logged in successfully",
-            token: token,
+            // token: token,
             user: others
         })
 

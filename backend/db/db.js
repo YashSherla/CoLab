@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
-const url = "mongodb://localhost:27017/coLab";
+// const url = "mongodb://localhost:27017/coLab"; // yash laptop
+const url = "mongodb+srv://admin:admin@cluster0.osm2m7k.mongodb.net/" // office laptop
 const mogoConnect = async () => {
     try {
         let connect = await mongoose.connect(url);

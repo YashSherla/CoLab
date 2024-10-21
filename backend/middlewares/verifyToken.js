@@ -2,14 +2,21 @@ const jwt = require('jsonwebtoken');
 const HTTP_STATUS = require('../utils/statusCode');
 const password = "admin"
 const verifyToken = async (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // const authHeader = req.headers.authorization;
+    // if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    //     return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+    //         success: false,
+    //         message: "No token provided"
+    //     })
+    // }
+    // const token = authHeader.split(' ')[1];
+    const token = req.cookies.access_token;
+    if (!token) {
         return res.status(HTTP_STATUS.UNAUTHORIZED).json({
             success: false,
             message: "No token provided"
         })
     }
-    const token = authHeader.split(' ')[1];
     try {
         const decode = jwt.verify(token, password)
         if (!decode) {

@@ -3,8 +3,8 @@ const bodyParser = require('body-parser');
 const authRouter = require('./router/authRouter');
 const userRouter = require('./router/userRouter');
 const projectRouter = require('./router/projectRouter');
+const cookieParser = require("cookie-parser");
 const taskRouter = require('./router/taskRouter');
-const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const path = require('path');
 const app = express();
@@ -15,7 +15,6 @@ const io = new Server(server, {
     cors: {
         origin: "http://localhost:5173",
         methods: ["GET", "POST", "DELETE"],
-
     }
 });
 app.use((req, res, next) => {
@@ -24,13 +23,16 @@ app.use((req, res, next) => {
 })
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
+app.use(cookieParser());
 app.use(express.json())
-app.use(cors());
+app.use(cors({
+    origin: "http://localhost:5173",
+    credentials: true 
+}));
 app.use('/auth', authRouter)
 app.use('/user', userRouter)
 app.use('/project', projectRouter)
 app.use('/task', taskRouter)
-app.use(cookieParser())
 
 
 app.get('/yash', (req, res) => {
