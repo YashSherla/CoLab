@@ -7,6 +7,7 @@ const { validateContributorIds, validateUserRole } = require('../utils/validate'
 const HTTP_STATUS = require('../utils/statusCode');
 const { createProjectSchema, updateProjectSchema } = require('../zodSchema/projectSchema');
 const { mogoConnect } = require('../db/db');
+const { User } = require('../model/userModel');
 const router = express.Router();
 
 router.post('/create/:id', verifyToken,async (req, res) => {
@@ -222,6 +223,7 @@ router.post('/assignContributor/:projectId', verifyToken, projectMiddelware, asy
         })
     }
 })
+
 router.post('/commentProject/:projectId', verifyToken, async (req, res) => {
     try {
         const comment = req.body.comment;
