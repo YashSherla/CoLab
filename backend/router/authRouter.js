@@ -16,7 +16,6 @@ router.post('/signup', async (req, res) => {
                 message: "Invalid Input / Password should atleast 6",
             })
         }
-        
         const hashedPassword = bcryptjs.hashSync(body.data.password, 10);
         await mogoConnect()
         const user = await User.create({ ...body.data, password: hashedPassword })

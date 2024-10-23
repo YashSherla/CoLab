@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const authRouter = require('./router/authRouter');
 const userRouter = require('./router/userRouter');
 const projectRouter = require('./router/projectRouter');
+const userInfoRouter = require('./router/userInfoRouter');
 const cookieParser = require("cookie-parser");
 const taskRouter = require('./router/taskRouter');
 const cors = require('cors');
@@ -10,6 +11,7 @@ const path = require('path');
 const app = express();
 const http = require('http');
 const { Server } = require('socket.io');
+
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
@@ -33,6 +35,7 @@ app.use('/auth', authRouter)
 app.use('/user', userRouter)
 app.use('/project', projectRouter)
 app.use('/task', taskRouter)
+app.use('/userInfo',userInfoRouter)
 
 
 app.get('/yash', (req, res) => {

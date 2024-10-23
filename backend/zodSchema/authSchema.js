@@ -4,8 +4,7 @@ const signupSchema = z.object({
     username: z.string(),
     email: z.string().email(),
     password: z.string().min(6),
-    avatar: z.string().optional(),
-    role: z.string().optional(),
+    active: z.boolean().optional(),
 }).strict()
 const signinSchema = z.object({
     email: z.string().email(),
