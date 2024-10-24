@@ -21,9 +21,11 @@ export const SelectRole = ({onRoleSelect}:SelectedRoleProps) =>{
         desc:"Works on assigned tasks and contributes to project deliverables.",
       }
     ]
-    const [selectedRole , setSelectedRole] = useState(undefined);
+    const [selectedRole , setSelectedRole] = useState<string|undefined>(window.localStorage.getItem('role')||undefined);
+    
     const handleRoleChange = (e:any) =>{
       const role  = e.target.value
+      window.localStorage.setItem('role',role);
       setSelectedRole(role)
       onRoleSelect(role)
     }
@@ -49,6 +51,7 @@ export const SelectRole = ({onRoleSelect}:SelectedRoleProps) =>{
                           type="radio"
                           name="role"
                           value={value.roleName}
+                          checked={selectedRole === value.roleName}
                           onChange={handleRoleChange}
                           className="mr-2"
                         />

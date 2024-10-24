@@ -25,7 +25,10 @@ const userInfoSchema = new mongoose.Schema({
     education: {
         degree: String,
         institution: String,
-        graduationYear: Number
+        graduatedYear: Number
+    },
+    aboutme:{
+        type:String
     }
 })
 const UserInfoModel = mongoose.model('UserInfo', userInfoSchema);
