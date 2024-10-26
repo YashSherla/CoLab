@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import animeGif from '../assets/colab.gif';
+import { useRecoilState } from "recoil";
+import { userRoleAtom } from "../store/userInfoAtom";
 
 interface Role {
     roleName:string,
@@ -21,7 +23,7 @@ export const SelectRole = ({onRoleSelect}:SelectedRoleProps) =>{
         desc:"Works on assigned tasks and contributes to project deliverables.",
       }
     ]
-    const [selectedRole , setSelectedRole] = useState<string|undefined>(window.localStorage.getItem('role')||undefined);
+    const [selectedRole, setSelectedRole] = useRecoilState(userRoleAtom);
     
     const handleRoleChange = (e:any) =>{
       const role  = e.target.value

@@ -14,10 +14,14 @@ const createUserInfo = z.object({
     education: z.object({
       degree: z.string().optional(),
       institution: z.string().optional(),
-      graduationYear: z.number().optional().nullable(),
-    }).optional()
+      graduatedYear: z.number().optional().nullable(),
+    }).optional(),
+    skills:z.array(z.string()).optional(),
+    aboutme:z.string().optional()
 })
+const { mogoConnect } = require('../db/db')
 router.post('/create',verifyToken,upload.single('avatar'),async(req,res)=>{
+    console.log(req.body);
     try {
        const body = createUserInfo.safeParse({
         ...req.body,
@@ -32,6 +36,7 @@ router.post('/create',verifyToken,upload.single('avatar'),async(req,res)=>{
                 message:errorMessages
             })
        }
+       await mogoConnect()
        const userInfo = await UserInfoModel.create({
         ...body.data,
         userId:req.user.id,

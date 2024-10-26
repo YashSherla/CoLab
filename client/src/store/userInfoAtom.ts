@@ -18,8 +18,12 @@ const initialUserDetails: UserDetail = savedUserDetails ? JSON.parse(savedUserDe
     graduatedYear: null,
     aboutme: ''
 };
-
+const savedRole = localStorage.getItem('role');
 export const userInfoAtom = atom<UserDetail>({
     key: "userInfoAtom",
     default:  initialUserDetails
 });
+export const userRoleAtom = atom({
+    key:'userRoleAtom',
+    default:savedRole,
+})

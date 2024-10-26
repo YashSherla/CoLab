@@ -21,7 +21,9 @@ export const SignupPage = () => {
         e.preventDefault();
         try {
             setLoading(true)
-            const res = await axios.post('http://localhost:3000/auth/signup', fromData);
+            const res = await axios.post('http://localhost:3000/auth/signup', fromData,{
+                withCredentials:true
+            });
             if (res.data.success == false) {
             setError(res.data.message);
             setLoading(false);
