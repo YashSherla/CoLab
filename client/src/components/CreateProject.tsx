@@ -1,5 +1,6 @@
 import { DarkMode } from "./Darkmode";
 import logo from "../assets/logo.png";
+import check from "../assets/check.png";
 import { FaCalendar, FaChevronDown, FaChevronUp, FaTrash } from "react-icons/fa";
 import video from '../assets/video.png';
 import { useEffect, useRef, useState } from "react";
@@ -8,6 +9,16 @@ import { app } from "../firebase";
 
 export const CreateProject = () => {
   const [showProject, setShowProjectDetails] = useState(false);
+  const [projectDetails , setProjectDetails] = useState({});
+
+  const [showworkFlows , setShowworkFlows] = useState(false);
+  const [workFlows , setWorkFlows] = useState({});
+
+  const [showHiring , setShowHiring] = useState(false);
+  const [hiring , setHiring] = useState({});
+
+  const [stepsCompeleted , setStepsCompeleted] = useState(false);
+
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [uploadPerc, setUploadPerc] = useState(0);
   const [file, setFile] = useState(undefined);
@@ -33,7 +44,9 @@ export const CreateProject = () => {
       });
     });
   };
-
+  const handleProjectDetails = (e:any) =>{
+    
+  }
   return (
     <div className='min-h-screen w-full bg-white dark:bg-black p-6'>
       <div className="flex justify-between">
@@ -43,15 +56,25 @@ export const CreateProject = () => {
         </div>
         <div className="mt-3"><DarkMode /></div>
       </div>
-      <div className="border border-black/[0.2] dark:border-white/[0.2] flex flex-col items-start max-w-lg mx-auto p-4 relative mt-3 rounded-2xl h-auto md:h-[50rem]">
+      <div className="border border-black/[0.2] dark:border-white/[0.2] flex flex-col items-start max-w-lg mx-auto p-4 relative mt-3 rounded-2xl h-auto md:h-auto">
         <div className="space-y-2">
           <h1 className="text-black text-2xl font-semibold dark:text-white">Create a Project</h1>
           <p className="text-black text-sm dark:text-white">Create projects of any complexity: from simple high-quality translations to ones with workflows, collaboration, deadline, and more.</p>
         </div>
-        <div className={`border border-black/[0.2] dark:border-white/[0.2] transition-transform transform flex flex-col items-start w-full p-4 h-full mt-3 rounded-lg overflow-auto ${showProject ? 'h-auto' : 'h-14'}`} >
+        {/* Projects Details */}
+        <div className={`border border-black/[0.2] dark:border-white/[0.2] transition-transform transform flex flex-col items-start w-full px-4 py-3 h-full mt-3 rounded-lg overflow-auto ${showProject ? 'h-auto' : 'h-14'}`} >
           <div className="flex justify-between w-full">
-            <h1 className="dark:text-white">Project details</h1>
-            <button onClick={() => setShowProjectDetails(!showProject)}>
+            <div className="flex gap-2 items-center">
+              {stepsCompeleted ? <img src={check} alt="" className="w-4 h-4" /> :
+              <p className="w-4 h-4 rounded-lg bg-gray-600 text-white text-center justify-center text-xs">1</p>
+            }
+              <h1 className="dark:text-white">Project details</h1>
+            </div>
+            <button onClick={() => {
+              setShowHiring(false)
+              setShowworkFlows(false);
+              setShowProjectDetails(!showProject);
+              }}>
               {showProject ? <FaChevronDown className="self-center dark:text-white" /> : <FaChevronUp className="self-center dark:text-white" />}
             </button>
           </div>
@@ -104,7 +127,7 @@ export const CreateProject = () => {
                 <div className="grid grid-cols-12 gap-4 items-center px-4">
                   <div className="col-span-1 flex items-center justify-center gap-1">
                     <img src={video} alt="File Type" className="w-20" />
-                    <p className="text-black text-lg dark:text-white">doc</p>
+                    <p className="text-black text-lg dark:text-white ">doc</p>
                   </div>
                   <div className="col-span-7 text-center">
                     <p className="text-black text-lg text-ellipsis overflow-hidden dark:text-white px-2 whitespace-nowrap">Yash Sherla</p>
@@ -120,7 +143,58 @@ export const CreateProject = () => {
             </div>
           )}
         </div>
+        <div className="w-0.5 bg-gray-400 mx-6" style={{ height: '20px' }}></div>
+        {/* Workflows */}
+        <div className={`border border-black/[0.2] dark:border-white/[0.2] transition-transform transform flex flex-col items-start w-full px-4 py-3 h-full  rounded-lg overflow-auto ${showworkFlows ? 'h-auto' : 'h-14'}`}>
+          <div className="flex justify-between w-full">
+            <div className="flex gap-2 items-center">
+              {stepsCompeleted ? <img src={check} alt="" className="w-4 h-4" /> :
+              <p className="w-4 h-4 rounded-lg bg-gray-600 text-white text-center justify-center text-xs">2</p>
+            }
+              <h1 className="dark:text-white">WorkFlows</h1>
+            </div>
+            <button onClick={() => {
+              setShowProjectDetails(false);
+              setShowHiring(false)
+              setShowworkFlows(!showworkFlows);
+            }}>
+              {showworkFlows ? <FaChevronDown className="self-center dark:text-white" /> : <FaChevronUp className="self-center dark:text-white" />}
+            </button>
+          </div>
+          {showworkFlows && (
+            <div className="flex flex-col w-full space-y-5">
+              <hr className="border-t border-black/[0.2] dark:border-white/[0.2] my-2 w-full" />
+              <input className=" h-9 w-full rounded-md border border-gray-400 bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:border-black dark:focus:border-white dark:text-white" id="email" placeholder="name@example.com" type="text" />
+            </div>
+          )}
+        </div>
+        <div className="w-0.5 bg-gray-400 mx-6" style={{ height: '20px' }}></div>
+        {/* Hiring */}
+        <div className={`border border-black/[0.2] dark:border-white/[0.2] transition-transform transform flex flex-col items-start w-full px-4 py-3 h-full  rounded-lg overflow-auto ${showHiring ? 'h-auto' : 'h-14'}`}>
+          <div className="flex justify-between w-full">
+            <div className="flex gap-2 items-center">
+              {stepsCompeleted ? <img src={check} alt="" className="w-4 h-4" /> :
+              <p className="w-4 h-4 rounded-lg bg-gray-600 text-white text-center justify-center text-xs">3</p>
+            }
+              <h1 className="dark:text-white">Hiring</h1>
+            </div>
+            <button onClick={() => {
+              setShowProjectDetails(false);
+              setShowworkFlows(false);
+              setShowHiring(!showHiring)
+            }}>
+              {showHiring ? <FaChevronDown className="self-center dark:text-white" /> : <FaChevronUp className="self-center dark:text-white" />}
+            </button>
+          </div>
+          {showHiring && (
+            <div className="flex flex-col w-full space-y-5">
+              <hr className="border-t border-black/[0.2] dark:border-white/[0.2] my-2 w-full" />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 };
+
+
