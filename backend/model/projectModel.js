@@ -37,6 +37,10 @@ const projectSchema = new mongoose.Schema({
         ref: 'User',
         default: null
     },
+    files: {
+        type: Array,
+        default: [],
+    },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

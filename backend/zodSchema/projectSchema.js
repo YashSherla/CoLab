@@ -15,6 +15,7 @@ const createProjectSchema = z.object({
         })),
     ]).optional().default([]),
     projectManager: z.string().optional(),
+    files: z.array(z.string()).optional(),
     createdBy: z.string().optional(),
     // comment: z.array(z.object({
     //     userId: z.string().refine((id) => mongoose.isValidObjectId(id), {

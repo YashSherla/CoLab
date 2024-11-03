@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { DarkMode } from "./Darkmode";
 import logo from "../assets/logo.png";
 import check from "../assets/check.png";
@@ -6,6 +7,7 @@ import video from '../assets/video.png';
 import { useEffect, useRef, useState } from "react";
 import { getDownloadURL, getStorage, ref, uploadBytesResumable } from "firebase/storage";
 import { app } from "../firebase";
+import axios from "axios";
 // interface ProjectDetails  {
 //   files:[],
 //   projectName:string,
@@ -15,12 +17,11 @@ import { app } from "../firebase";
 export const CreateProject = () => {
   const [showProject, setShowProjectDetails] = useState(false);
   const [projectDetails , setProjectDetails] = useState({
-    files:[],
-    projectName:'',
+    name:'',
     description:'',
-    deadline:'',
+    deadline: '',
+    files:[],
   });
-
   const [showworkFlows , setShowworkFlows] = useState(false);
   const [workFlows , setWorkFlows] = useState({});
 
@@ -33,28 +34,40 @@ export const CreateProject = () => {
   const [uploadPerc, setUploadPerc] = useState(0);
   const [files, setFiles] = useState([]);
   const [fileUploadError, setFileUploadError] = useState("");
-  const [fileuploading , setFileUploading] = useState(false);
-
-  useEffect(() => {
-    if (files) {
-      handleFile()
+  const [fileuploading, setFileUploading] = useState(false);
+  const handleFileChange = (e:any) => {
+    console.log("1. handleFileChange triggered");
+    const selectedFiles = e.target.files;
+    console.log("2. Selected files:", selectedFiles);
+    
+    if (!selectedFiles) {
+      console.log("No files selected");
+      return;
     }
-  }, [files]);
-  const handleFile = () => {
+
+    setFiles(selectedFiles);
+    console.log("3. Files state updated");
+     handleFile(selectedFiles);
+  }
+  const handleFile = (selectedFiles: FileList) => {
+    console.log("4. handleFileUpload called with files:", selectedFiles);
     try {
-      if (files.length > 0 && files.length + projectDetails.files.length < 6) {
+      console.log("5. Inside try block");
+      console.log("Current files length:", selectedFiles.length);
+      console.log("Existing project files length:", projectDetails.files.length);
+      if (selectedFiles.length > 0 && selectedFiles.length + projectDetails.files.length < 6) {
         console.log("This is handlefile")
-        const promise = Array.from(files).map((file)=>storeFile(file));
+        const promise = Array.from(selectedFiles).map((file) => storeFile(file));
+        console.log("3. Files state updated");
         Promise.all(promise).then((file)=>{
           setProjectDetails({
             ...projectDetails,
-            files: projectDetails.files.concat(file as any) 
+            files: projectDetails.files.concat(file as any)
           });
         }).catch((error)=>{
           setFileUploading(false);
           console.error('Error uploading images:', error);
         })
-        
       }else{
         setFileUploadError("You can only upload up to 6 images");
       }
@@ -82,14 +95,36 @@ export const CreateProject = () => {
       });
     })
   };
-  // useEffect(()=>{
-  //   console.log(projectDetails);
-  // },[projectDetails])
+  useEffect(()=>{
+    console.log(projectDetails);
+  },[projectDetails])
   const handleChange = (e:any) =>{
-    const updatedDetails = { ...projectDetails, [e.target.id]: e.target.value };
-  setProjectDetails(updatedDetails);
-  const { projectName, description, deadline } = updatedDetails;
-  setStepsCompeleted(!!(projectName && description && deadline));
+    const updatedDetails = { ...projectDetails, [e.target.id]: e.target.value};
+    setProjectDetails(updatedDetails);
+  const { name, description, deadline } = updatedDetails;
+    setStepsCompeleted(!!(name && description && deadline));
+  }
+
+  const handleSubmit = async () => {
+    try {
+      const res = await axios.post('http://localhost:3000/project/create', projectDetails, {
+        withCredentials:true
+      })
+      if (res.data.success == false) {
+        // setError(res.data.message);
+        // setShowDialog(true);
+        console.log(res.data);
+        
+        } else {
+            // setLoading(false);
+            // setError(null);
+        // setShowDialog(false);
+        console.log(res.data);
+        }
+    } catch (error) {
+     console.log(error);
+      
+    }
   }
   return (
     <div className='min-h-screen w-full bg-white dark:bg-black p-6'>
@@ -128,7 +163,7 @@ export const CreateProject = () => {
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="flex-1">
                   <p className="text-sm text-gray-500 flex">Project Name<span className="text-red-500">*</span></p>
-                  <input className="h-9 w-full rounded-md border border-gray-400 bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:border-black dark:focus:border-white dark:text-white" id="projectName" placeholder="Project Name" type="text" 
+                  <input className="h-9 w-full rounded-md border border-gray-400 bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:border-black dark:focus:border-white dark:text-white" id="name" placeholder="Project Name" type="text" 
                   onChange={handleChange}/>
                 </div>
                 <div className="flex-1">
@@ -156,7 +191,7 @@ export const CreateProject = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500">File to process</p>
-                <input type="file" ref={fileRef} id="input-file-upload" onChange={(e: any) => setFiles(e.target.files)} multiple className="hidden" />
+                <input type="file" ref={fileRef} onChange={handleFileChange} multiple className="hidden" />
                 <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-md p-6 cursor-pointer border-gray-400 transition h-[10rem]">
                   <div className="text-center items-center flex flex-col" onClick={(e) => {
                     e.preventDefault();
@@ -189,10 +224,16 @@ export const CreateProject = () => {
                   </div>
                 </div>
               </div>
+              <div>
+                <button className="dark:bg-gray-800 text-white p-2 rounded-lg left-0-0" onClick={() => {
+
+                  }}>Next Step</button>
+              </div>
             </div>
           )}
         </div>
         <div className="w-0.5 bg-gray-400 mx-6" style={{ height: '20px' }}></div>
+        {/* Workflows */}
       </div>
     </div>
   );
@@ -216,52 +257,3 @@ export const CreateProject = () => {
 
 
 
-
-{/* Workflows */}
-{/* <div className={`border border-black/[0.2] dark:border-white/[0.2] transition-transform transform flex flex-col items-start w-full px-4 py-3 h-full  rounded-lg overflow-auto ${showworkFlows ? 'h-auto' : 'h-14'}`}>
-<div className="flex justify-between w-full">
-  <div className="flex gap-2 items-center">
-    {stepsCompeleted ? <img src={check} alt="" className="w-4 h-4" /> :
-    <p className="w-4 h-4 rounded-lg bg-gray-600 text-white text-center justify-center text-xs">2</p>
-  }
-    <h1 className="dark:text-white">WorkFlows</h1>
-  </div>
-  <button onClick={() => {
-    setShowProjectDetails(false);
-    setShowHiring(false)
-    setShowworkFlows(!showworkFlows);
-  }}>
-    {showworkFlows ? <FaChevronDown className="self-center dark:text-white" /> : <FaChevronUp className="self-center dark:text-white" />}
-  </button>
-</div>
-{showworkFlows && (
-  <div className="flex flex-col w-full space-y-5">
-    <hr className="border-t border-black/[0.2] dark:border-white/[0.2] my-2 w-full" />
-    <input className=" h-9 w-full rounded-md border border-gray-400 bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:border-black dark:focus:border-white dark:text-white" id="email" placeholder="name@example.com" type="text" />
-  </div>
-)}
-</div>
-<div className="w-0.5 bg-gray-400 mx-6" style={{ height: '20px' }}></div> */}
-{/* Hiring */}
-{/* <div className={`border border-black/[0.2] dark:border-white/[0.2] transition-transform transform flex flex-col items-start w-full px-4 py-3 h-full  rounded-lg overflow-auto ${showHiring ? 'h-auto' : 'h-14'}`}>
-<div className="flex justify-between w-full">
-  <div className="flex gap-2 items-center">
-    {stepsCompeleted ? <img src={check} alt="" className="w-4 h-4" /> :
-    <p className="w-4 h-4 rounded-lg bg-gray-600 text-white text-center justify-center text-xs">3</p>
-  }
-    <h1 className="dark:text-white">Hiring</h1>
-  </div>
-  <button onClick={() => {
-    setShowProjectDetails(false);
-    setShowworkFlows(false);
-    setShowHiring(!showHiring)
-  }}>
-    {showHiring ? <FaChevronDown className="self-center dark:text-white" /> : <FaChevronUp className="self-center dark:text-white" />}
-  </button>
-</div>
-{showHiring && (
-  <div className="flex flex-col w-full space-y-5">
-    <hr className="border-t border-black/[0.2] dark:border-white/[0.2] my-2 w-full" />
-  </div>
-)}
-</div> */}

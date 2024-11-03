@@ -8,18 +8,22 @@ const HTTP_STATUS = require('../utils/statusCode');
 const { createProjectSchema, updateProjectSchema } = require('../zodSchema/projectSchema');
 const { mogoConnect } = require('../db/db');
 const { User } = require('../model/userModel');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' })
 const router = express.Router();
 
-router.post('/create/:id', verifyToken,async (req, res) => {
-    if (req.params.id !== req.user.id.toString()) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-            success: false,
-            message: "You can only create project form your account"
-        })
-    }
+router.post('/create', verifyToken, upload.single('files'), async (req, res) => {
+    // if (req.params.id !== req.user.id.toString()) {
+    //     return res.status(HTTP_STATUS.BAD_REQUEST).json({
+    //         success: false,
+    //         message: "You can only create project form your account"
+    //     })
+    // }
+    console.log(req.body);
     try {
         await mogoConnect();
         const body = createProjectSchema.safeParse(req.body);
+        console.log(body.data);
         if (!body.success) {
             const errorMessages = body.error.errors.map(err => {
                 return `${err.path.join('.')} - ${err.message}`;
@@ -30,7 +34,6 @@ router.post('/create/:id', verifyToken,async (req, res) => {
             })
         }
         const { projectManager: projectManagerId, contributersIds } = body.data;
-        console.log(body.data);
         const contibutor = Array.isArray(contributersIds) ? contributersIds : [contributersIds];
         if (contibutor) {
             console.log("This is contributor");
@@ -40,13 +43,14 @@ router.post('/create/:id', verifyToken,async (req, res) => {
             await validateUserRole(projectManagerId, 'Manager')
         }
         const project = await Project.create({
-            name: body.data.name,
-            description: body.data.deadline,
-            deadline: body.data.deadline,
-            status: body.data.status,
+            // name: body.data.name,
+            // description: body.data.deadline,
+            // deadline: body.data.deadline,
+            // status: body.data.status,
+            ...body.data,
             createdBy: req.user.id,
-            contributersIds: contributersIds,
-            projectManager: projectManagerId,
+            // contributersIds: contributersIds,
+            // projectManager: projectManagerId,
         });
         if (!project) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
