@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { getDownloadURL, getStorage, ref, uploadBytesResumable } from "firebase/storage";
 import { app } from "../firebase";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 // interface ProjectDetails  {
 //   files:[],
 //   projectName:string,
@@ -33,21 +34,22 @@ export const CreateProject = () => {
   const [hiring , setHiring] = useState({});
 
   const [stepsCompeleted , setStepsCompeleted] = useState(false);
-
+  // files
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [uploadPerc, setUploadPerc] = useState<{ [key: number]: number }>({});
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const [fileUploadError, setFileUploadError] = useState("");
-  const [fileuploading, setFileUploading] = useState(false);
+  const [_, setFileUploading] = useState(false);
+  // submit
+  const [error , setError] = useState<string | null>(null);
+  const [__, setLoading] =useState(false);
 
+  const navigate = useNavigate();
 
   const handleFileChange = (e:any) => {
-    console.log("1. handleFileChange triggered");
     const selectedFiles = e.target.files;
-    console.log("2. Selected files:", selectedFiles);
     if (!selectedFiles) {
       console.log("No files selected");
-      return;
     }
     const filesArray = Array.from(selectedFiles) as File[]; 
     const formattedFiles = filesArray.map((file) => ({
@@ -55,33 +57,38 @@ export const CreateProject = () => {
       url: '',
     }));
     setFiles(prev => [...prev, ...formattedFiles]);
-    console.log("3. Files state updated");
-     handleFile(selectedFiles);
+    handleFile(selectedFiles);
   }
   const handleFile = (selectedFiles: FileList) => {
-    console.log("4. handleFileUpload called with files:", selectedFiles);
     try {
-      console.log("5. Inside try block");
-      console.log("Current files length:", selectedFiles.length);
-      console.log("Existing project files length:", projectDetails.files.length);
       if (selectedFiles.length > 0 && selectedFiles.length + projectDetails.files.length < 6) {
-        console.log("This is handlefile")
-        const promise = Array.from(selectedFiles).map((file,index) => storeFile(file,projectDetails.files.length + index));
-        console.log("3. Files state updated");
-        Promise.all(promise).then((file)=>{
+        setFileUploading(true);
+          const promise = Array.from(selectedFiles).map((file,index) => storeFile(file,projectDetails.files.length + index));
+          Promise.all(promise).then((urls)=>{
+            const newFile = Array.from(selectedFiles).map((file, index) => ({
+            name: file.name,
+            url: urls[index] as string,
+          }));
           setProjectDetails({
             ...projectDetails,
-            files: projectDetails.files.concat(file as any)
+            files: [...projectDetails.files, ...newFile],
           });
+          // setProjectDetails({
+          //   ...projectDetails,
+          //   files: projectDetails.files.concat(file as any)
+          // });
+          setFileUploading(false)
         }).catch((error)=>{
           setFileUploading(false);
           console.error('Error uploading images:', error);
         })
       }else{
         setFileUploadError("You can only upload up to 6 images");
+        setFileUploading(false)
       }
-    } catch (error) {
-      console.log(error);
+    } catch (error:any) {
+      setFileUploadError(error)
+      setFileUploading(false)
     }
   }
   const storeFile = (file: any , index:number) => {
@@ -110,34 +117,37 @@ export const CreateProject = () => {
     )
     setProjectDetails({...projectDetails,files:projectDetails.files.filter((_,i)=>i !== index)})
   }
+
   useEffect(()=>{
     console.log(projectDetails);
   },[projectDetails])
+
+
   const handleChange = (e:any) =>{
     const updatedDetails = { ...projectDetails, [e.target.id]: e.target.value};
     setProjectDetails(updatedDetails);
   const { name, description, deadline } = updatedDetails;
     setStepsCompeleted(!!(name && description && deadline));
   }
+
   const handleSubmit = async () => {
     try {
       const res = await axios.post('http://localhost:3000/project/create', projectDetails, {
         withCredentials:true
       })
-      if (res.data.success == false) {
-        // setError(res.data.message);
-        // setShowDialog(true);
-        console.log(res.data);
-        
+      console.log("Response from API:", res.data);
+      if (res.data.success === false) {
+        console.log("Error Message:", res.data.message);
+        setError(res.data.message);
         } else {
-            // setLoading(false);
-            // setError(null);
-        // setShowDialog(false);
-        console.log(res.data);
+        setLoading(false);
+        setError(null);
+        console.log("Project created successfully:", res.data);
+        navigate('/dashboard')
         }
-    } catch (error) {
-     console.log(error);
-      
+    } catch (error:any) {
+      console.log("An error occurred:", error.response.data.message);
+      setError("An unexpected error occurred. Please try again.");
     }
   }
   return (
@@ -237,10 +247,14 @@ export const CreateProject = () => {
                               </div>
                               <div className="col-span-2 flex items-center justify-end">
 
-                                <p className={`text-xs dark:bg-[#002c27] px-1 rounded-2xl border-2 border-dashed border-[#1fb69b] 
-                                    ${percentage === 0 ? 'text-red-500' : percentage < 50 ? 'text-yellow-500' : 'text-green-500'}`}>
-                                    {percentage}%
-                                </p>
+                              <p className={`text-xs 
+                                              px-1 rounded-2xl border-2 border-dashed 
+                                              bg-[#002c27] 
+                                              ${percentage === 0 ? 'text-red-500 border-red-600' : 
+                                                percentage < 50 ? 'text-yellow-500 border-yellow-400' : 
+                                                'text-green-500 border-green-600'}`}>
+                                  {percentage}%
+                              </p>
                                 {/* <p className="text-[#1fb69b] text-xs dark:bg-[#002c27] px-1 rounded-2xl border-2 border-dashed border-[#1fb69b]">{percentage}%</p> */}
                               </div>
                               <div className="col-span-2 flex items-center justify-end">
@@ -250,13 +264,15 @@ export const CreateProject = () => {
                           </div>
                 })
               } 
+             {fileUploadError ?  <p className="text-red-500">{ fileUploadError }</p>  : null}
+             {error ?  <p className="text-red-500">{ error }</p>  : null}
              {stepsCompeleted ? <div>
                 <button className="dark:bg-gray-800 text-white p-2 rounded-lg left-0-0" onClick={handleSubmit}>Next Step</button>
               </div> : null}
             </div>
           )}
         </div>
-        <div className="w-0.5 bg-gray-400 mx-6" style={{ height: '20px' }}></div>
+        {/* <div className="w-0.5 bg-gray-400 mx-6" style={{ height: '20px' }}></div> */}
         {/* Workflows */}
       </div>
     </div>
