@@ -8,6 +8,7 @@ import { HomePage } from './pages/Colab/HomePage'
 import { CreateProject } from './components/CreateProject'
 import { SearchProject } from './components/SearchProject'
 import { Dashboard } from './pages/Admin/DashBoard'
+import { Task } from './pages/Admin/TaskPage'
 
 const AppwithState = () => {
   return (
@@ -18,7 +19,9 @@ const AppwithState = () => {
         <Route path="/search-projects" element={<SearchProject />} />
         <Route path="/sign-up" element={<SignupPage />} />
         <Route path="/sign-in" element={<SigninPage />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard/*" element={<Dashboard />}>
+          <Route path="tasks" element={<Task />} />
+        </Route>
         <Route path="/" element={<HomePage />} />
      </Routes>
     </div>
