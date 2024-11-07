@@ -19,7 +19,7 @@ const AppwithState = () => {
         <Route path="/search-projects" element={<SearchProject />} />
         <Route path="/sign-up" element={<SignupPage />} />
         <Route path="/sign-in" element={<SigninPage />} />
-        <Route path="/dashboard/*" element={<Dashboard />}>
+        <Route path="/:id/dashboard/*" element={<Dashboard />}>
           <Route path="tasks" element={<Task />} />
         </Route>
         <Route path="/" element={<HomePage />} />

@@ -143,7 +143,7 @@ export const CreateProject = () => {
         setLoading(false);
         setError(null);
         console.log("Project created successfully:", res.data);
-        navigate('/dashboard')
+        navigate(`/${res.data.project._id}/dashboard/home`)
         }
     } catch (error:any) {
       console.log("An error occurred:", error.response.data.message);

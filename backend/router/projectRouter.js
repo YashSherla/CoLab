@@ -60,7 +60,8 @@ router.post('/create', verifyToken, upload.single('files'), async (req, res) => 
         }
         return res.status(HTTP_STATUS.OK).json({
             success: true,
-            message: "Your Project Succesfully Created"
+            message: "Your Project Succesfully Created",
+            project:project
         })
     } catch (error) {
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
