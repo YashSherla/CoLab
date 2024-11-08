@@ -88,7 +88,7 @@ export function SidebarItem({ icon, text, alert , to }: any) {
     return (
         <li>
             <Link to={to}
-            className={`relative flex items-center py-2 px-3 my-1 rounded-md cursor-pointer transition-colors group 
+            className={`relative flex items-center py-2 px-3 my-1 rounded-md cursor-pointer transition-colors group dark:text-white
             ${match ? "bg-gray-600 bg-opacity-20 dark:bg-white dark:bg-opacity-20 dark:text-white " 
             : "hover:bg-gray-600 hover:bg-opacity-20 dark:hover:bg-white dark:hover:bg-opacity-20 dark:hover:text-white text-gray-600"}`}
             >

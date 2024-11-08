@@ -6,6 +6,7 @@ const taskSchema =  z.object({
     description: z.string().optional().default('No Description Provided'),
     deadline:z.string(),
     status: z.string().optional().default('Not Started'),
+    bounty:z.string().optional(),
     assignedUsers:z.union([
         z.string().refine((id)=> mongoose.isValidObjectId(id),{
             message: 'Invalid ObjectId',
@@ -21,6 +22,7 @@ const updateTaskSchema = z.object({
     description:z.string().optional(),
     deadline:z.string().optional(),
     status:z.string().optional(),
+    bounty:z.string().optional(),
     assignedUsers:z.union([
         z.string().refine((id)=> mongoose.isValidObjectId(id),{
             message: 'Invalid ObjectId',

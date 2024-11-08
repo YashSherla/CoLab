@@ -9,6 +9,7 @@ const { createProjectSchema, updateProjectSchema } = require('../zodSchema/proje
 const { mogoConnect } = require('../db/db');
 const { User } = require('../model/userModel');
 const multer = require('multer');
+const { UserInfoModel } = require('../model/userInfoModel');
 const upload = multer({ dest: 'uploads/' })
 const router = express.Router();
 
@@ -294,6 +295,34 @@ router.get('/getProjectComments/:projectId', verifyToken, async (req, res) => {
     return res.status(HTTP_STATUS.OK).json({
         success: true,
         comment: comments,
+    })
+})
+router.get('/contributor/:projectId',async(req,res)=>{
+    const projectId = req.params.projectId;
+    await mogoConnect();
+    const project = await Project.findById(projectId)
+    if (!project) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            status:false,
+            message:"Give Correct Details"
+        })
+    }
+    const projectContributor = project.contributersIds;
+    const userDetails = await Promise.all(projectContributor.map(async (id)=>{
+        const user = await User.findById(id);
+        const { password: pass, ...others } = user._doc;
+        const userInfo = await UserInfoModel.findOne({userId:id});
+        console.log(`This is userInfo: ${userInfo}`);
+        const userProfileDetails = {
+            ...others,
+            avatar:userInfo.avatar,
+        }
+        return userProfileDetails;
+    }))
+    
+    return res.status(HTTP_STATUS.OK).json({
+        status:true,
+        projectContributor:userDetails,
     })
 })
 module.exports = router

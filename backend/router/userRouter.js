@@ -6,6 +6,7 @@ const { authorize } = require('../middlewares/authorize');
 const multer = require('multer');
 const HTTP_STATUS = require('../utils/statusCode');
 const { updateBody } = require('../zodSchema/userSchema');
+const { UserInfoModel } = require('../model/userInfoModel');
 const upload = multer({ dest: 'uploads/' })
 const router = express.Router();
 
@@ -127,7 +128,7 @@ router.get('/manager',verifyToken,async(req,res)=>{
 })
 router.get('/contributor',verifyToken,async(req,res)=>{
     try {
-        const getContributor = await User.find({role:'Contributor'})
+        const getContributor = await UserInfoModel.find({role:'Contributor'})
         if (!getContributor) {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success:false,

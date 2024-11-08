@@ -1,4 +1,5 @@
-import { atom } from 'recoil';
+import axios from 'axios';
+import { atom, atomFamily, selectorFamily } from 'recoil';
 interface UserDetail {
     avatar:string,
     skills:string[],
@@ -26,4 +27,21 @@ export const userInfoAtom = atom<UserDetail>({
 export const userRoleAtom = atom({
     key:'userRoleAtom',
     default:savedRole,
+})
+export const projectContirbuteAtomFamily = atomFamily({
+    key:"projectContirbuteAtomFamily",
+    default:selectorFamily({
+        key:"ProjectContirbuteSelectorFamily",
+        get:(projectId:string) =>async () => {
+            try {
+                const res = await axios.get(`http://localhost:3000/project/contributor/${projectId}`)
+                const data = res.data.projectContributor;
+                console.log("This is AtomContri" + data[0].username);
+                return data
+            } catch (error) {
+                console.log(error);
+                return null
+            }
+        }
+    })
 })

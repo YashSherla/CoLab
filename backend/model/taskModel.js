@@ -20,6 +20,10 @@ const taskSchema = new mongoose.Schema({
             message: 'Deadline must be a future date.'
         }
     },
+    bounty:{
+        type:String,
+        default:'0'
+    },
     status: {
         type: String,
         enum: ['Not Started', 'In Progress', 'Completed', 'Archived', 'Cancelled'],
