@@ -4,18 +4,21 @@ import { TaskDialog } from "./components/TaskDialog";
 import { useParams } from "react-router-dom";
 import { useRecoilValue, useRecoilValueLoadable } from "recoil";
 import { projectContirbuteAtomFamily } from "../../store/userInfoAtom";
+import axios from "axios";
 // interface ContributorDetails {
 //     username:string,
 //     active:boolean,
 //     avatar:string,
 // }
 export const Task = () => {
+  const params = useParams();
+  const projectId = params.id;
   const [open, setOpen] = useState(false);
-
   const openDialog = () => setOpen(true);
   const closeDialog = () => setOpen(false);
-  const params = useParams();
-  const contributorValue = useRecoilValueLoadable(projectContirbuteAtomFamily(params.id as string));
+ 
+  // contributorList
+  const contributorValue = useRecoilValueLoadable(projectContirbuteAtomFamily(projectId as string));
   const [contributorList,setContributorList] = useState([])
     useEffect(()=>{
             if (contributorValue.state === 'hasValue') {
@@ -23,7 +26,8 @@ export const Task = () => {
             }
             console.log(`This Contributor List ${contributorList}`);
         },[contributorValue])
-  return (
+    
+   return (
     <div className="w-full h-full bg-white dark:bg-black">
       <div className={`w-full h-full border border-gray-200 dark:border-gray-700 rounded-3xl shadow-lg dark:shadow-xl`}>
         <div className="flex justify-between p-5">

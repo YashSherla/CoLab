@@ -1,6 +1,46 @@
+import axios from "axios";
+import { useState } from "react";
+import { useParams } from "react-router-dom";
+import Select from 'react-select';
+import active from '../../../assets/active.png'
+import inactive from '../../../assets/inactive.png'
+const customSingleValue = ({ data }: any) => {
+  return (
+    <div className="flex items-center space-x-2">
+      <img src={data.avatar} alt={data.username} className="w-6 h-6 rounded-full" />
+      <span>{data.username}</span>
+    </div>
+  );
+};
 
+const customMultiValue = ({ data }: any) => {
+  return (
+    <div className={`flex items-center space-x-2  rounded-full px-2 py-1 ${data.active ? 'bg-green-300' : 'bg-red-300'}`}>
+      <img src={data.avatar} alt={data.username} className="w-5 h-5 rounded-full" />
+      <span>{data.username}</span>
+    </div>
+  );
+};
+type Contributor = {
+  _id:string,
+  username:string,
+  avatar:string,
+  active:string,
+}
 export const TaskDialog = ({isOpen, onClose,contributorList}:any) =>{
-    
+    const params = useParams();
+    const projectId = params.id;
+    const [taskForm, setTaskForm] = useState({
+      name: "",
+      description: "",
+      bounty: "NA",
+      status: "Not Started",
+      assignees: [], // Store contributor _ids
+    });
+    const [loading,setLoading] = useState(false);
+    const [error,setError] = useState('');
+    const [task, setTask] = useState({});
+    const [selectedOptions, setSelectedOptions] = useState<Contributor[]>([]);
     const StatusList = [
     'Not Started',
     'In Progress',
@@ -18,6 +58,38 @@ export const TaskDialog = ({isOpen, onClose,contributorList}:any) =>{
     if (!isOpen) {
         return null
     }
+    const handleCreateTask =async () =>{
+      try {
+        const res = await axios.post(`http://localhost:3000/task/create/${projectId}`,taskForm,{withCredentials:true});
+        if (res.data.success === false) {
+          setError(res.data.message);
+          setLoading(false);
+        }
+        setLoading(false);
+        setError("");
+        setTask(res.data.task)
+      } catch (error:any) {
+        setLoading(false);
+        setError(error);
+      }
+    }
+    const handleChange = (e:any) =>{
+      setTaskForm({
+        ...taskForm,
+        [e.target.id]:e.target.value
+      })
+    }
+    const handleSelectChange = (selected: any) => {
+      setTaskForm({
+        ...taskForm,
+        assignees: selected.map((option: any) => option.value),
+      });
+    };
+    const selectOptions = contributorList.map((contributor: Contributor) => ({
+      value: contributor._id, // This will be the ID of the contributor
+      label: contributor.username, // The username will be the label
+      ...contributor,
+    }));
     return (
         <div
         id="crud-modal"
@@ -64,8 +136,7 @@ export const TaskDialog = ({isOpen, onClose,contributorList}:any) =>{
                   </label>
                   <input
                     type="text"
-                    name="name"
-                    id="task-name"
+                    id="name"
                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                     placeholder="Type task name"
                     required
@@ -110,24 +181,58 @@ export const TaskDialog = ({isOpen, onClose,contributorList}:any) =>{
                   >
                     Assigne
                   </label>
-                  <select
-                    id="task-category"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
-                  >
-                    {contributorList.map((value:any,index:number)=>{
-                        return <option value={value} key={index}>{value.username}</option>
-                    })}
-                  </select>
+                  <Select
+                    isMulti
+                    options={selectOptions}
+                    onChange={handleSelectChange}
+                    formatOptionLabel={(contributorList:Contributor) => (
+                      <div className="flex items-center space-x-4">
+                        {contributorList.active ? <img src={active} width={20} /> : <img src={inactive} width={20}  /> }
+                       
+                        <div className="flex space-x-2">
+                          <img
+                            src={contributorList.avatar}
+                            className="w-6 h-6 rounded-full"
+                          />
+                          <span>{contributorList.username}</span>
+                        
+                        </div>
+                      </div>
+                    )}
+                    components={{SingleValue:customSingleValue,MultiValue:customMultiValue}}
+                    styles={{
+                      control: (provided) => ({
+                        ...provided,
+                        borderColor: '#ddd',
+                        padding: '2px',
+                        borderRadius: '0.375rem',
+                        backgroundColor: '#F9FAFB', 
+                        boxShadow: 'none',
+                      }),
+                      multiValue: (provided) => ({
+                        ...provided,
+                        backgroundColor: 'transparent',
+                        borderRadius: '9999px',
+                      }),
+                      multiValueLabel: (provided) => ({
+                        ...provided,
+                        color: '#1f2937', // This is the text color for dark mode (text-gray-900)
+                      }),
+                      option:(provider) =>({
+                        ...provider,
+                        backgroundColor: '#F9FAFB', 
+                      })
+                    }}
+                  />
                 </div>
                 <div className="col-span-2">
                   <label
                     className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    htmlFor="task-description"
                   >
                     Task Description
                   </label>
                   <textarea
-                    id="task-description"
+                    id="description"
                     className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                     placeholder="Write task description here"
                   />
