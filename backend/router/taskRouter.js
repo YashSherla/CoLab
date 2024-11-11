@@ -10,6 +10,7 @@ const taskMiddelware = require('../middlewares/taskMiddleware');
 const HTTP_STATUS = require('../utils/statusCode');
 const { taskSchema, updateTaskSchema } = require('../zodSchema/taskSchema');
 const { mogoConnect } = require('../db/db');
+const { UserInfoModel } = require('../model/userInfoModel');
 const router = express.Router({ mergeParams: true });
 router.post('/create/:projectId', verifyToken, projectMiddelware, async (req, res) => {
     const projectId = req.params.projectId;
@@ -22,18 +23,25 @@ router.post('/create/:projectId', verifyToken, projectMiddelware, async (req, re
     try {
         const body = taskSchema.safeParse(req.body);
         if (!body.success) {
+            const errorMessages = body.error.errors.map(err => {
+                return `${err.path.join('.')} - ${err.message}`;
+            });
             return res.status(HTTP_STATUS.BAD_REQUEST).json({
                 success: false,
-                message: "Invalid Fields"
+                message: errorMessages
             })
         }
         await mogoConnect();
+        console.log(`This is Create Task ${body.data.assignedUsers}`);
         const { assignedUsers: assignedUsersIds } = body.data;
         const assignUser = Array.isArray(assignedUsersIds) ? (assignedUsersIds) : [assignedUsersIds];
         const verifyingId = await Promise.all(assignUser.map(async (id) => {
-            const project = await Project.findOne({ _id: projectId, contributersIds: id })
+            console.log(`This is assignUser Ids ${id}`);
+            const project = await Project.findOne({ _id: projectId})
+            console.log(`This is project ${project}`);
             if (!project) {
-                const user = await User.findById(id);
+                const userInfo = await UserInfoModel.findOne({userId:id});
+                const user = await User.findById(id)
                 throw new Error(`User with ID ${id} is not a contributor for the project${user ? `: ${user.username}` : ''}`);
             }
             const valid = validateUserRole(id, 'Contributor');
@@ -57,6 +65,7 @@ router.post('/create/:projectId', verifyToken, projectMiddelware, async (req, re
         })
     }
 })
+
 router.post('/update', verifyToken, taskMiddelware, async (req, res) => {
     const { projectId, taskId } = req.query;
     if (!projectId || !taskId) {
