@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import Select from 'react-select';
 import active from '../../../assets/active.png'
 import inactive from '../../../assets/inactive.png'
+import { SnackBarComponents } from "../../../components/SnackBar";
 const customSingleValue = ({ data }: any) => {
   return (
     <div className="flex items-center space-x-2">
@@ -27,7 +28,7 @@ type Contributor = {
   avatar:string,
   active:string,
 }
-export const TaskDialog = ({isOpen, onClose,contributorList}:any) =>{
+  export const TaskDialog = ({isOpen, onClose,contributorList}:any) =>{
     const params = useParams();
     const projectId = params.id;
     const [taskForm, setTaskForm] = useState({
@@ -36,11 +37,14 @@ export const TaskDialog = ({isOpen, onClose,contributorList}:any) =>{
       bounty: "NA",
       status: "Not Started",
       assignedUsers: [], // Store contributor _ids
-      deadline:'2024-11-19'
+      deadline:'2024-11-19',
+      // deadline:''
     });
     const [loading,setLoading] = useState(false);
     const [error,setError] = useState('');
     const [task, setTask] = useState({});
+    const [snackbar, setSnackbar] = useState(false)
+    const [snackbarMessage, setSnackbarMessage] = useState('')
     const StatusList = [
     'Not Started',
     'In Progress',
@@ -55,37 +59,66 @@ export const TaskDialog = ({isOpen, onClose,contributorList}:any) =>{
         "1000$",
         "2000$",
     ]
+    useEffect(() => {
+      if (isOpen) {
+        setSnackbar(false);
+        setSnackbarMessage('');
+      }
+    }, [isOpen]);
+
     if (!isOpen) {
         return null
     }
-    const handleCreateTask = async () => {
+  
+    const handleCreateTask = async (e: any) => {
+      e.preventDefault();
       setLoading(true);
-      // await new Promise((resolve) => setTimeout(resolve, 3000));
+      setSnackbar(false);
       try {
-        const res = await axios.post(`http://localhost:3000/task/create/${projectId}`,taskForm,{withCredentials:true});
+        const res = await axios.post(
+          `http://localhost:3000/task/create/${projectId}`,
+          taskForm,
+          { withCredentials: true }
+        );
         if (res.data.success === false) {
           setError(res.data.message);
+          setSnackbarMessage('Failed to create task');
+          setSnackbar(true);
           setLoading(false);
+          return;
         }
+        console.log("This is Yash Sherla again");
+        await new Promise((resolve)=>setTimeout(resolve, 1000))
+        setError("");
+        setSnackbarMessage('✅ Successfully created the task');
+        setSnackbar(true);
+        setTask(res.data.task);
         setLoading(false);
-        setError(""); 
-        alert("Successfully")
-        setTask(res.data.task)
-      } catch (error:any) {
+        setTimeout(() => {
+          onClose();
+        }, 1000);
+      } catch (error: any) {
         setLoading(false);
-        setError(error);
-        alert(error)
+        if (error.response) {
+          setError(error.response.data.message || 'An error occurred');
+          setSnackbarMessage(`❌ ${error.response.data.message}` || '❌ An error occurred');
+        } else if (error.request) {
+          setError('No response from server');
+          setSnackbarMessage('❌ No response from server');
+        } else {
+          setError(error.message || 'An unexpected error occurred');
+          setSnackbarMessage(`❌ ${error.message}` || '❌ An unexpected error occurred');
+        }
+        setSnackbar(true);
       }
-    }
+    };
+    
     const handleChange = (e:any) =>{
       setTaskForm({
         ...taskForm,
         [e.target.id]:e.target.value
       })
     }
-    // useEffect(()=>{
-    //   console.log(taskForm);
-    // },[taskForm])
     const handleSelectChange = (selected: any) => {
       setTaskForm({
         ...taskForm,
@@ -99,7 +132,7 @@ export const TaskDialog = ({isOpen, onClose,contributorList}:any) =>{
       ...contributor,
     }));
     return (
-    loading ? <h1 className="text-center">Loading....</h1> :<div className="overflow-y-auto overflow-x-hidden fixed  inset-0 z-50 flex justify-center items-center w-full h-full bg-black bg-opacity-50 ">
+      <div className="overflow-y-auto overflow-x-hidden fixed  inset-0 z-50 flex justify-center items-center w-full h-full bg-black bg-opacity-50 ">
         <div className="relative p-4 w-full max-w-md max-h-full">
           <div className="relative bg-white rounded-lg shadow dark:bg-gray-800">
             <div className="flex items-center justify-between p-4 md:p-5 border-b rounded-t dark:border-gray-600">
@@ -244,18 +277,23 @@ export const TaskDialog = ({isOpen, onClose,contributorList}:any) =>{
                     className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                     placeholder="Write task description here"
                   />
+                </div >
+                <div className="col-span-2">
+                 <p className="text-red-500">{error && typeof error === 'string' ? error : ''}</p>
                 </div>
               </div>
               <button
                 type="submit"
                 className="text-white inline-flex items-center bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                disabled={loading}
                 // onClick={handleCreateTask}
               >
-                Add New Task
+               {loading ?'Creating...' :' Add New Task'}
               </button>
             </form>
           </div>
         </div>
+       <SnackBarComponents setSnackbar={setSnackbar} snackbarMessage={snackbarMessage} snackbar={snackbar} />
       </div>
     )
 }

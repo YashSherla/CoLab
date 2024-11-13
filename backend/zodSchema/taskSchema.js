@@ -31,6 +31,7 @@ const updateTaskSchema = z.object({
             message: 'Invalid ObjectId',
         }))
     ]).optional(),
+    // projectId:z.string().optional()
 }).strict()
 
 module.exports = {

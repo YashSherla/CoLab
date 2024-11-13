@@ -14,12 +14,7 @@ const { UserInfoModel } = require('../model/userInfoModel');
 const router = express.Router({ mergeParams: true });
 router.post('/create/:projectId', verifyToken, projectMiddelware, async (req, res) => {
     const projectId = req.params.projectId;
-    if (!projectId) {
-        return res.status(401).json({
-            success: false,
-            message: "ProjectId required"
-        })
-    }
+    console.log(req.body);
     try {
         const body = taskSchema.safeParse(req.body);
         if (!body.success) {
@@ -37,7 +32,8 @@ router.post('/create/:projectId', verifyToken, projectMiddelware, async (req, re
         const assignUser = Array.isArray(assignedUsersIds) ? (assignedUsersIds) : [assignedUsersIds];
         const verifyingId = await Promise.all(assignUser.map(async (id) => {
             console.log(`This is assignUser Ids ${id}`);
-            const project = await Project.findOne({ _id: projectId})
+
+            const project = await Project.findById({ _id: projectId})
             console.log(`This is project ${project}`);
             if (!project) {
                 const userInfo = await UserInfoModel.findOne({userId:id});
@@ -52,7 +48,7 @@ router.post('/create/:projectId', verifyToken, projectMiddelware, async (req, re
             assignedUsers: verifyingId,
             projectId: projectId
         });
-        req.io.emit('taskCreated', task);
+        // req.io.emit('taskCreated', task);
         return res.status(HTTP_STATUS.OK).json({
             success: true,
             message: "Successfully created task",
@@ -282,5 +278,42 @@ router.get('/getTaskComments/:taskId', verifyToken, async (req, res) => {
         success: true,
         comment: comments,
     })
+})
+router.get('/get/:projectId',async(req,res)=>{
+const projectId = req.params.projectId;
+console.log("This is Projectid"+projectId);
+if (!projectId) {
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        status:false,
+        message:"Provide ProjectId"
+    })
+}
+const searchTerm = req.query.searchTerm || '';
+const status = req.query.status;
+if (status === undefined) {
+    status = { $in:['Not Started', 'In Progress', 'Completed', 'Archived', 'Cancelled']}
+}
+try {
+    const task = await Task.find({
+        projectId:projectId,
+        name:{$regex:searchTerm , $options:'i'},
+        status:status,
+    }) 
+    if (!task) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            status:false,
+            message:"Not Found"
+        })
+    }
+    return res.status(HTTP_STATUS.OK).json({
+        status:false,
+        task:task
+    })
+} catch (error) {
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        status:false,
+        message:"Provide ProjectId"
+    })
+}
 })
 module.exports = router
