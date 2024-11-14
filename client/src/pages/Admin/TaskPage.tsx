@@ -4,6 +4,7 @@ import { TaskDialog } from "./components/TaskDialog";
 import { useParams } from "react-router-dom";
 import { useRecoilValueLoadable } from "recoil";
 import { projectContirbuteAtomFamily } from "../../store/userInfoAtom";
+import { Filter } from "./components/FilterData";
 
 export const Task = () => {
   const params = useParams();
@@ -16,6 +17,7 @@ export const Task = () => {
   const contributorValue = useRecoilValueLoadable(projectContirbuteAtomFamily(projectId as string));
   const [contributorList, setContributorList] = useState([]);
 
+  const [filterisOpen , setFilterisOpen] = useState(false);
   useEffect(() => {
     if (contributorValue.state === 'hasValue') {
       setContributorList(contributorValue.contents as any);
@@ -26,7 +28,7 @@ export const Task = () => {
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
   };
-
+  
   return (
     <div className="w-full h-full bg-white dark:bg-black">
       <div className="w-full h-full border border-gray-200 dark:border-gray-700 rounded-3xl shadow-lg dark:shadow-xl">
@@ -91,23 +93,30 @@ export const Task = () => {
               <div className="relative w-32 h-7 flex">
                   <div className="absolute inset-y-0 mt-2 left-0 flex items-center justify-center ps-3 pointer-events-none">
                       <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+                          <path stroke="currentColor"  d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
                       </svg>
                   </div>
                   <input type="search" id="default-search" className="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 f dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Search..." required />
               </div>
               <div className="h-9 border-l border-gray-300"></div>
               <div className="gap-2 flex">
-                <button className="flex gap-2 justify-center dark:text-white items-center w-20 h-8 shadow-sm rounded-lg border border-gray-300">
-                  <ListFilter width={15}/>
-                  <span className="text-sm ">Filter</span>
-                </button>
+                <div>
+                  <button className="flex gap-2 justify-center dark:text-white items-center w-20 h-8 shadow-sm rounded-lg border border-gray-300" onClick={()=>setFilterisOpen(!filterisOpen)} >
+                    <ListFilter width={15}/>
+                    <span className="text-sm ">Filter</span>
+                  </button>
+                </div>
                 <button className="flex gap-2 justify-center items-center w-28 h-8 shadow-sm rounded-lg border border-gray-300 bg-black dark:bg-white text-white dark:text-black">
                   <span className="text-sm">+ Create Task</span>
                 </button>
               </div>
             </div>
         </div>
+        {filterisOpen && (
+          <div className="absolute top-50 right-1 transform -translate-x-4 z-10">
+            <Filter isOpen={filterisOpen} />
+          </div>
+        )}
         <div id="default-tab-content">
           {/* Tab Panels */}
           <div className={`${activeTab === "profile" ? "block" : "hidden"} p-4 rounded-lg bg-gray-50 dark:bg-gray-800`}>
@@ -132,6 +141,7 @@ export const Task = () => {
           </div>
         </div>
       </div>
+      
       <TaskDialog isOpen={open} onClose={closeDialog} contributorList={contributorList} />
     </div>
   );

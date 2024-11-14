@@ -289,11 +289,11 @@ if (!projectId) {
     })
 }
 const searchTerm = req.query.searchTerm || '';
-const status = req.query.status;
-if (status === undefined) {
-    status = { $in:['Not Started', 'In Progress', 'Completed', 'Archived', 'Cancelled']}
-}
 try {
+    const status = req.query.status;
+    if (status === undefined || status === 'All') {
+        status = { $in:['Not Started', 'In Progress', 'Completed', 'Archived', 'Cancelled']}
+    }
     const task = await Task.find({
         projectId:projectId,
         name:{$regex:searchTerm , $options:'i'},
@@ -306,13 +306,14 @@ try {
         })
     }
     return res.status(HTTP_STATUS.OK).json({
-        status:false,
+        status:true,
         task:task
     })
 } catch (error) {
+    console.log(`Task filter error ${error}`);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         status:false,
-        message:"Provide ProjectId"
+        message:error
     })
 }
 })
