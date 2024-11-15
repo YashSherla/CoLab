@@ -288,33 +288,52 @@ if (!projectId) {
         message:"Provide ProjectId"
     })
 }
-const searchTerm = req.query.searchTerm || '';
+const searchTerm = req.query.searchTerm || ''; 
 try {
-    const status = req.query.status;
-    if (status === undefined || status === 'All') {
-        status = { $in:['Not Started', 'In Progress', 'Completed', 'Archived', 'Cancelled']}
+    let status = {};
+    if (req.query.all === undefined || req.query.all === 'true') {
+        status = { $in: ['Not Started', 'In Progress', 'Completed', 'Archived', 'Cancelled'] };
+    } else {
+        if (req.query.notstarted === 'true') {
+            status = { $in: ['Not Started'] };
+        }
+        if (req.query.inprogress === 'true') {
+            status = { $in: ['In Progress'] };
+        }
+        if (req.query.completed === 'true') {
+            status = { $in: ['Completed'] };
+        }
+        if (req.query.archived === 'true') {
+            status = { $in: ['Archived'] };
+        }
+        if (req.query.cancelled === 'true') {
+            status = { $in: ['Cancelled'] };
+        }
     }
+
     const task = await Task.find({
-        projectId:projectId,
-        name:{$regex:searchTerm , $options:'i'},
-        status:status,
-    }) 
-    if (!task) {
+        projectId: projectId,
+        name: { $regex: searchTerm, $options: 'i' },
+        status: status
+    });
+
+    if (!task || task.length === 0) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
-            status:false,
-            message:"Not Found"
-        })
+            status: false,
+            message: "Not Found"
+        });
     }
+
     return res.status(HTTP_STATUS.OK).json({
-        status:true,
-        task:task
-    })
+        status: true,
+        task: task
+    });
 } catch (error) {
     console.log(`Task filter error ${error}`);
     return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        status:false,
-        message:error
-    })
+        status: false,
+        message: error
+    });
 }
 })
 module.exports = router

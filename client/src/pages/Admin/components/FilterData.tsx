@@ -1,17 +1,16 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { useRecoilState } from "recoil";
-import { taskFilterAtomFamily } from "../../../store/userInfoAtom";
+
 
 interface FilterProps {
   isOpen: boolean;
+//   value:string;
 }
 export const Filter: React.FC<FilterProps> = ({ isOpen }) => {
     const params = useParams();
     const [filterValueSet , setfilterValueSet] = useState({
-        status:''
+        status:'All'
     })
-    const [filter , setfilter] = useRecoilState(taskFilterAtomFamily(params.id as string))
   
     const initialFilterTypes = [
     'All',
@@ -34,13 +33,21 @@ export const Filter: React.FC<FilterProps> = ({ isOpen }) => {
       setFilteredData(filterValue);
     }
   };
-  useEffect(()=>{
-    const urlParams = new URLSearchParams(location.search);
-    const searchParams = {
-        status: urlParams.get('status') || 'All',
+//   useEffect(()=>{
+//     const urlParams = new URLSearchParams(location.search);
+//     const searchParams = {
+//         status: urlParams.get('status') || 'All',
+//     }
+//     setfilterValueSet(searchParams)
+//   },[])
+  const handleChangeFilter = (e:any) =>{
+    const value = e.target.value;
+    if (value) {
+        setfilterValueSet({
+            status:value 
+        })  
     }
-    setfilterValueSet(searchParams)
-  },[])
+  }
   return isOpen ? (
     <div className="z-10 bg-white rounded-lg shadow w-60 dark:bg-gray-700">
       <div className="p-3">
@@ -79,9 +86,10 @@ export const Filter: React.FC<FilterProps> = ({ isOpen }) => {
               <div className="flex items-center p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-600">
                 <input
                   id={value}
-                  value={filterValueSet.status}
+                  checked={filterValueSet.status === value}
                   type="checkbox"
                   className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-700 dark:focus:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500"
+                  onChange={handleChangeFilter}
                 />
                 <label className="w-full ms-2 text-sm font-medium text-gray-900 rounded dark:text-gray-300">
                   {value}
