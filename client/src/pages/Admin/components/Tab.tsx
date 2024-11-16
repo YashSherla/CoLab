@@ -1,6 +1,7 @@
+import axios from "axios";
 import { KanbanIcon, ListFilter, Table2, TimerIcon } from "lucide-react"
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { List } from "rsuite"
 interface TabProps {
     activeTab:string;
@@ -9,17 +10,29 @@ interface TabProps {
     filterisOpen:boolean;
 }
 export const Tab = ({activeTab,handleTabChange,setFilterisOpen,filterisOpen}:TabProps) =>{
+    const { id } = useParams();
     const navigate = useNavigate();
     const [searchTerm,setSearchTerm] = useState('')
     const [taskdata , setTaskdata] = useState({
         search:'',
     })
     useEffect(()=>{
-        const urlParams = new URLSearchParams(location.search);
-        setTaskdata({
-            search:searchTerm
-        })
-    },[location.search])
+        // const urlParams = new URLSearchParams(location.search);
+        // setTaskdata({
+        //     search:searchTerm
+        // })
+        const handleSumbit = async () => {
+            await new Promise((resolve)=>setTimeout(resolve, 1000))
+            try {
+                const res = await axios.get(`http://localhost:3000/task/get/${id}?searchTerm=${searchTerm}`)  
+                const data = res.data;
+                console.log(data.task);
+            } catch (error) {
+                console.log(error);
+            }
+        }
+        handleSumbit()
+    },[searchTerm])
     return (
     <div className="border-b px-5 border-gray-200 dark:border-gray-700 flex justify-between">
         <div>
@@ -74,11 +87,11 @@ export const Tab = ({activeTab,handleTabChange,setFilterisOpen,filterisOpen}:Tab
                   placeholder="Search..." 
                   required
                   onChange={(e)=>{
-                    const urlParams = new URLSearchParams();
+                    // const urlParams = new URLSearchParams();
                     setSearchTerm(e.target.value)
-                    urlParams.set('searchTerm',taskdata.search)
-                    const searchQuery = urlParams.toString();
-                    navigate(`/tasks?${searchQuery}`)
+                    // urlParams.set('searchTerm',taskdata.search)
+                    // const searchQuery = urlParams.toString();
+                    // navigate(`/tasks?${searchQuery}`)
                   }}
                    />
               </div>

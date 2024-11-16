@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
 
 
 interface FilterProps {
@@ -7,7 +6,6 @@ interface FilterProps {
 //   value:string;
 }
 export const Filter: React.FC<FilterProps> = ({ isOpen }) => {
-    const params = useParams();
     const [filterValueSet , setfilterValueSet] = useState({
         status:'All'
     })

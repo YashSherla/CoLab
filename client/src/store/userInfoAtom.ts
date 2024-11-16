@@ -45,7 +45,6 @@ export const projectContirbuteAtomFamily = atomFamily({
         }
     })
 })
-
 export const taskFilterAtomFamily = atomFamily({
     key:"taskFilterAtomFamily",
     default:selectorFamily({
