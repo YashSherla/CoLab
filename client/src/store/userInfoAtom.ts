@@ -45,18 +45,16 @@ export const projectContirbuteAtomFamily = atomFamily({
         }
     })
 })
-interface TaskProp{
-    
-}
+
 export const taskFilterAtomFamily = atomFamily({
     key:"taskFilterAtomFamily",
     default:selectorFamily({
         key:"taskFilterSelectorFamily",
         get:(projectId:string) => async () => {
             try {
-                const res = await axios.get(`http://localhost:3000/task/get/${projectId}?status=All`)
-                const data = res.data.task;
-                return data;
+                const res = await axios.get(`http://localhost:3000/task/get/${projectId}`)
+                const tasks = res.data.task;
+                return tasks;
             } catch (error) {
                 console.log(error);
                 return null;

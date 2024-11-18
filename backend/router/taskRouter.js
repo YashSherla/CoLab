@@ -279,61 +279,72 @@ router.get('/getTaskComments/:taskId', verifyToken, async (req, res) => {
         comment: comments,
     })
 })
-router.get('/get/:projectId',async(req,res)=>{
-const projectId = req.params.projectId;
-console.log("This is Projectid"+projectId);
-if (!projectId) {
-    return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        status:false,
-        message:"Provide ProjectId"
-    })
-}
-const searchTerm = req.query.searchTerm || ''; 
-try {
-    let status = {};
-    if (req.query.all === undefined || req.query.all === 'true') {
-        status = { $in: ['Not Started', 'In Progress', 'Completed', 'Archived', 'Cancelled'] };
-    } else {
-        if (req.query.notstarted === 'true') {
-            status = { $in: ['Not Started'] };
-        }
-        if (req.query.inprogress === 'true') {
-            status = { $in: ['In Progress'] };
-        }
-        if (req.query.completed === 'true') {
-            status = { $in: ['Completed'] };
-        }
-        if (req.query.archived === 'true') {
-            status = { $in: ['Archived'] };
-        }
-        if (req.query.cancelled === 'true') {
-            status = { $in: ['Cancelled'] };
-        }
-    }
-
-    const task = await Task.find({
-        projectId: projectId,
-        name: { $regex: searchTerm, $options: 'i' },
-        status: status
-    });
-
-    if (!task || task.length === 0) {
+router.get('/get/:projectId', async (req, res) => {
+    const projectId = req.params.projectId;
+    console.log("This is Projectid: " + projectId);
+    
+    if (!projectId) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
             status: false,
-            message: "Not Found"
+            message: "Provide ProjectId"
         });
     }
 
-    return res.status(HTTP_STATUS.OK).json({
-        status: true,
-        task: task
-    });
-} catch (error) {
-    console.log(`Task filter error ${error}`);
-    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-        status: false,
-        message: error
-    });
-}
-})
+    const searchTerm = req.query.searchTerm || ''; 
+    try {
+        let status = [];
+
+        // If 'all' is not specified or is 'true', include all statuses
+        if (req.query.all === undefined || req.query.all === 'true') {
+            status = ['Not Started', 'In Progress', 'Completed', 'Archived', 'Cancelled'];
+        } else {
+            // Add the status to the filter based on query parameters
+            if (req.query.notstarted === 'true') {
+                status.push('Not Started');
+            }
+            if (req.query.inprogress === 'true') {
+                status.push('In Progress');
+            }
+            if (req.query.completed === 'true') {
+                status.push('Completed');
+            }
+            if (req.query.archived === 'true') {
+                status.push('Archived');
+            }
+            if (req.query.cancelled === 'true') {
+                status.push('Cancelled');
+            }
+        }
+
+        // If no valid status was provided, default to all
+        if (status.length === 0) {
+            status = ['Not Started', 'In Progress', 'Completed', 'Archived', 'Cancelled'];
+        }
+
+        const task = await Task.find({
+            projectId: projectId,
+            name: { $regex: searchTerm, $options: 'i' },
+            status: { $in: status }
+        });
+
+        if (!task || task.length === 0) {
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
+                status: false,
+                message: "Not Found"
+            });
+        }
+
+        return res.status(HTTP_STATUS.OK).json({
+            status: true,
+            task: task
+        });
+    } catch (error) {
+        console.log(`Task filter error: ${error}`);
+        return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+            status: false,
+            message: error.message
+        });
+    }
+});
+
 module.exports = router

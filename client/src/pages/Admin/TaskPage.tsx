@@ -54,12 +54,12 @@ export const Task = () => {
           <span className="text-2xl dark:text-white">Project Task</span>
         </div>
         <Tab activeTab={activeTab} handleTabChange={handleTabChange} setFilterisOpen={setFilterisOpen} filterisOpen={filterisOpen}/>
-        {filterisOpen && (
+        {/* {filterisOpen && (
           <div className="absolute top-50 right-1 transform -translate-x-4 z-10">
             <Filter isOpen={filterisOpen} />
           </div>
-        )}
-        <TabPanel activeTab={activeTab}/>
+        )} */}
+        {/* <TabPanel activeTab={activeTab}/> */}
       </div>
       
       <TaskDialog isOpen={open} onClose={closeDialog} contributorList={contributorList} />

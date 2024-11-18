@@ -39,12 +39,13 @@ export const Filter: React.FC<FilterProps> = ({ isOpen }) => {
 //     setfilterValueSet(searchParams)
 //   },[])
   const handleChangeFilter = (e:any) =>{
-    const value = e.target.value;
+    const value = e.target.id;
     if (value) {
         setfilterValueSet({
             status:value 
         })  
     }
+    console.log(`This is filter value ${value}`);
   }
   return isOpen ? (
     <div className="z-10 bg-white rounded-lg shadow w-60 dark:bg-gray-700">
