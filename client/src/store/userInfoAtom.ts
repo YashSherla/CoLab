@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { atom, atomFamily, selectorFamily } from 'recoil';
+import { UserProfile } from '../types/type';
 interface UserDetail {
     avatar:string,
     skills:string[],
@@ -61,4 +62,9 @@ export const taskFilterAtomFamily = atomFamily({
             }
         }
     })
+})
+
+export const userAtom = atom<UserProfile | null>({
+    key: "userAtom",
+    default: null,
 })

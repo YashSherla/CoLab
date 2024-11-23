@@ -2,11 +2,9 @@ import { Layers } from "lucide-react";
 import { useEffect, useState } from "react";
 import { TaskDialog } from "./components/TaskDialog";
 import { useParams } from "react-router-dom";
-import { useRecoilState, useRecoilValueLoadable } from "recoil";
-import { projectContirbuteAtomFamily, taskFilterAtomFamily } from "../../store/userInfoAtom";
-import { Filter } from "./components/FilterData";
+import { useRecoilValueLoadable } from "recoil";
+import { projectContirbuteAtomFamily } from "../../store/userInfoAtom";
 import { Tab } from "./components/Tab";
-import { TabPanel } from "./components/TabPanel";
 
 export const Task = () => {
   const params = useParams();

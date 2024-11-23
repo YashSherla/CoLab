@@ -67,10 +67,10 @@ router.post('/signin', async (req, res) => {
         console.log(token);
         const { password: pass, ...others } = user._doc;
         return res.cookie('access_token',token,{
-            httpOnly:true,
-            // secure:false,
-            // sameSite: 'None',
-            maxAge: 24 * 60 * 60 * 1000,
+            httpOnly: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 24 * 60 * 60 * 1000
         }).status(HTTP_STATUS.OK).json({
             success: true,
             message: "User logged in successfully",

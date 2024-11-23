@@ -5,7 +5,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ImportLoader } from '../components/Loader';
+import { useSetRecoilState } from 'recoil';
+import { userAtom } from '../store/userInfoAtom';
 export const SigninPage = () => {
+    const  setStoreData = useSetRecoilState(userAtom);
     const [fromData, setFromData] = useState({});
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -16,7 +19,6 @@ export const SigninPage = () => {
     }
     const handleChange = (e: any) => {
         setFromData({ ...fromData, [e.target.id]: e.target.value });
-        console.log(fromData);
     }
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -31,6 +33,7 @@ export const SigninPage = () => {
             } else {
                 setLoading(false);
                 setError(null);
+                setStoreData(res.data.user)
                 navigate('/')
             }
         } catch (error:any) {

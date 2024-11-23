@@ -12,3 +12,6 @@ export interface Task {
   updatedAt: string; // or Date if you parse it
   __v: number;
 }
+export interface UserProfile {
+  
+}
