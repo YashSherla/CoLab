@@ -13,5 +13,11 @@ export interface Task {
   __v: number;
 }
 export interface UserProfile {
-  
+  _id:string,
+  username:string,
+  email:string,
+  active:string,
+  createdAt: string; 
+  updatedAt: string;
+  __v: number;
 }

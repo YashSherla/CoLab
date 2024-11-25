@@ -33,7 +33,7 @@ export const SigninPage = () => {
             } else {
                 setLoading(false);
                 setError(null);
-                setStoreData(res.data.user)
+                setStoreData(res.data.user);
                 navigate('/')
             }
         } catch (error:any) {

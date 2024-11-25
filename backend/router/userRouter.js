@@ -7,6 +7,8 @@ const multer = require('multer');
 const HTTP_STATUS = require('../utils/statusCode');
 const { updateBody } = require('../zodSchema/userSchema');
 const { UserInfoModel } = require('../model/userInfoModel');
+const { default: mongoose } = require('mongoose');
+const { mogoConnect } = require('../db/db')
 const upload = multer({ dest: 'uploads/' })
 const router = express.Router();
 
@@ -83,15 +85,16 @@ router.delete('/delete/:id', verifyToken, async (req, res) => {
         })
     }
 })
-router.get('/get/:id', verifyToken, async (req, res) => {
-    if (req.params.id !== req.user.id) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-            success: false,
-            message: "You can only fetch your own account!"
-        })
-    }
+router.get('/get', verifyToken, async (req, res) => {
+    // if (req.params.id !== req.user.id) {
+    //     return res.status(HTTP_STATUS.BAD_REQUEST).json({
+    //         success: false,
+    //         message: "You can only fetch your own account!"
+    //     })
+    // }
     try {
-        const user = await User.findById(req.params.id);
+        await mogoConnect();
+        const user = await User.findById(req.user.id);
         const { password: pass, ...others } = user._doc;
         return res.status(HTTP_STATUS.OK).json({
             success: true,
