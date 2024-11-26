@@ -5,7 +5,6 @@ import { userAtom } from "../store/userInfoAtom";
 export const PrivateRoutes = () => {
     // const cookies = document.cookie.split(';');
     // const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('access_token='));
-    // console.log(tokenCookie);
     const userProfile = useRecoilValue(userAtom);
-    return userProfile ? <Outlet /> : <Navigate to="/sign-in" />;
+    return userProfile ? <Outlet  /> : <Navigate to="/sign-in" />;
 };

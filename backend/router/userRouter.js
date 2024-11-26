@@ -95,11 +95,21 @@ router.get('/get', verifyToken, async (req, res) => {
     try {
         await mogoConnect();
         const user = await User.findById(req.user.id);
+        const userInfo = await UserInfoModel.findOne({userId:req.user.id})
         const { password: pass, ...others } = user._doc;
+        const {avatar , skills , role , experience , education , aboutme} = userInfo._doc;
         return res.status(HTTP_STATUS.OK).json({
             success: true,
             message: "User Deleted Successfully",
-            user: others
+            user: {
+                ...others,
+                avatar:avatar,
+                skills:skills,
+                role:role,
+                experience:experience,
+                // education:education,
+                aboutme:aboutme
+            }
         })
     } catch (error) {
         return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({

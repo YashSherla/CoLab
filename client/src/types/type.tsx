@@ -20,4 +20,8 @@ export interface UserProfile {
   createdAt: string; 
   updatedAt: string;
   __v: number;
+  avatar:string,
+  skills:string[],
+  experience:string,
+  aboutme:string,
 }

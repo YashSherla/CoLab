@@ -25,8 +25,8 @@ export const TabPanel = ({activeTab,task}:TabPanelProps) =>{
           <Kanban activeTab={activeTab} task={task} />
           <div className={`${activeTab === "dashboard" ? "block" : "hidden"} p-4 rounded-lg bg-gray-50 dark:bg-gray-800`}>
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              {task.map((value:any)=>{
-                return <p>{value.name}</p>
+              {task.map((value:any,index)=>{
+                return <p key={index}>{value.name}</p>
               })}
             </div>
           </div>

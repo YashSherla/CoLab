@@ -15,7 +15,7 @@ export const Dashboard = () => {
             <SideBar>
                 <div className="flex flex-col justify-between">
                     <div className="h-full">
-                        <SidebarItem icon={<LayoutDashboard size={20} />} text="Dashboard" to='home' />
+                        <SidebarItem icon={<LayoutDashboard size={20} />} text="Dashboard"  />
                         <SidebarItem icon={<StickyNote size={20} />} text="Projects" alert />
                         <SidebarItem icon={<Layers size={20} />} text="Tasks" to='tasks' />
                         <SidebarItem icon={<Users size={20} />} text="Team" to='teams'/>
@@ -82,7 +82,7 @@ const SideBar = ({ children }: any) => {
 export function SidebarItem({ icon, text, alert , to }: any) {
     const closeSideBar = useContext(SidebarContext);
     const { id } = useParams();
-    console.log(id);
+    // console.log(id);
     const location = useLocation();
     const match = location.pathname === `/${id}/dashboard/${to}` || (to === '' && location.pathname === ':id/dashboard');
     return (
